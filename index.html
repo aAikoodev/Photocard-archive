@@ -1,0 +1,539 @@
+
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Photocard Archive</title>
+
+    <meta name="theme-color" content="#171522">
+    <meta name="description" content="Seu arquivo pessoal de photocards.">
+
+    <link rel="stylesheet" href="style.css">
+    <link rel="manifest" href="manifest.json">
+</head>
+
+<body>
+    <div class="app">
+
+        <!-- CABEÇALHO -->
+        <header class="topbar">
+            <div class="logo">
+                <span class="logo-icon">✦</span>
+                <div>
+                    <h1>Photocard Archive</h1>
+                    <p>Seu universo de photocards</p>
+                </div>
+            </div>
+
+            <div class="profile">
+                <span class="profile-icon">✧</span>
+                <span>Colecionador</span>
+            </div>
+        </header>
+
+        <!-- MENU DE NAVEGAÇÃO -->
+        <nav class="sidebar" aria-label="Menu principal">
+            <button class="nav-button active" data-page="dashboard">
+                <span>⌂</span> Painel
+            </button>
+
+            <button class="nav-button" data-page="catalog">
+                <span>▤</span> Catálogo
+            </button>
+
+            <button class="nav-button" data-page="packs">
+                <span>▣</span> Abrir pacotes
+            </button>
+
+            <button class="nav-button" data-page="collection">
+                <span>▦</span> Minha coleção
+            </button>
+
+            <button class="nav-button" data-page="missions">
+                <span>⚑</span> Missões
+            </button>
+
+            <button class="nav-button" data-page="trades">
+                <span>⇄</span> Duplicatas
+            </button>
+
+            <button class="nav-button" data-page="settings">
+                <span>⚙</span> Configurações
+            </button>
+        </nav>
+
+        <!-- CONTEÚDO PRINCIPAL -->
+        <main class="main-content">
+
+            <!-- PAINEL -->
+            <section class="page active" id="dashboard">
+                <div class="page-heading">
+                    <div>
+                        <p class="eyebrow">SEU ARQUIVO PESSOAL</p>
+                        <h2>Meu painel</h2>
+                        <p>Acompanhe seu progresso e suas conquistas.</p>
+                    </div>
+                </div>
+
+                <div class="welcome-card">
+                    <div>
+                        <p class="eyebrow">BEM-VINDO AO SEU ARQUIVO</p>
+                        <h3>Uma coleção, infinitas descobertas.</h3>
+                        <p>Abra pacotes, descubra cards e complete sua coleção.</p>
+                        <button class="primary-button" data-go="packs">
+                            Abrir pacotes
+                        </button>
+                    </div>
+                    <div class="welcome-decoration">✦</div>
+                </div>
+
+                <div class="stats-grid">
+                    <article class="stat-card">
+                        <span class="stat-icon">▤</span>
+                        <p>Cards descobertos</p>
+                        <strong id="stat-discovered">0</strong>
+                    </article>
+
+                    <article class="stat-card">
+                        <span class="stat-icon">▦</span>
+                        <p>Cards na coleção</p>
+                        <strong id="stat-owned">0</strong>
+                    </article>
+
+                    <article class="stat-card">
+                        <span class="stat-icon">✧</span>
+                        <p>Moedas disponíveis</p>
+                        <strong id="stat-coins">500</strong>
+                    </article>
+
+                    <article class="stat-card">
+                        <span class="stat-icon">✦</span>
+                        <p>Cards duplicados</p>
+                        <strong id="stat-duplicates">0</strong>
+                    </article>
+                </div>
+
+                <div class="content-grid">
+                    <article class="panel-card">
+                        <div class="section-heading">
+                            <div>
+                                <h3>Progresso da coleção</h3>
+                                <p>Quantos cards você já conseguiu?</p>
+                            </div>
+                            <span id="collection-percentage">0%</span>
+                        </div>
+
+                        <div class="progress-track">
+                            <div class="progress-fill" id="collection-progress"></div>
+                        </div>
+
+                        <p class="muted-text" id="collection-progress-text">
+                            Nenhum card coletado ainda.
+                        </p>
+                    </article>
+
+                    <article class="panel-card">
+                        <div class="section-heading">
+                            <div>
+                                <h3>Raridades</h3>
+                                <p>Seus cards por categoria.</p>
+                            </div>
+                        </div>
+
+                        <div id="rarity-summary" class="rarity-summary">
+                            <p class="muted-text">
+                                Suas raridades aparecerão aqui.
+                            </p>
+                        </div>
+                    </article>
+                </div>
+
+                <article class="panel-card">
+                    <div class="section-heading">
+                        <div>
+                            <h3>Atividade recente</h3>
+                            <p>Suas últimas descobertas.</p>
+                        </div>
+                    </div>
+
+                    <div id="recent-activity" class="activity-list">
+                        <p class="empty-message">
+                            Você ainda não abriu nenhum pacote.
+                        </p>
+                    </div>
+                </article>
+            </section>
+
+            <!-- CATÁLOGO -->
+            <section class="page" id="catalog">
+                <div class="page-heading">
+                    <div>
+                        <p class="eyebrow">ARQUIVO OFICIAL</p>
+                        <h2>Catálogo de photocards</h2>
+                        <p>Consulte todos os cards cadastrados no sistema.</p>
+                    </div>
+
+                    <button class="primary-button" id="add-card-button">
+                        + Adicionar card
+                    </button>
+                </div>
+
+                <div class="filter-bar">
+                    <input
+                        type="search"
+                        id="catalog-search"
+                        placeholder="Buscar por nome ou ID..."
+                        aria-label="Buscar cards"
+                    >
+
+                    <select id="rarity-filter" aria-label="Filtrar por raridade">
+                        <option value="all">Todas as raridades</option>
+                    </select>
+
+                    <select id="episode-filter" aria-label="Filtrar por episódio">
+                        <option value="all">Todos os episódios</option>
+                    </select>
+                </div>
+
+                <div class="catalog-counter">
+                    <span id="catalog-count">0 cards cadastrados</span>
+                </div>
+
+                <div id="catalog-grid" class="card-grid">
+                    <div class="empty-state">
+                        <span>▤</span>
+                        <h3>Seu catálogo está vazio</h3>
+                        <p>Adicione seus primeiros photocards para começar.</p>
+                    </div>
+                </div>
+
+                <!-- FORMULÁRIO DE CADASTRO -->
+                <div class="modal" id="card-modal" hidden>
+                    <div class="modal-content">
+                        <div class="section-heading">
+                            <h3 id="card-form-title">Adicionar photocard</h3>
+                            <button
+                                class="icon-button"
+                                id="close-card-modal"
+                                aria-label="Fechar formulário"
+                            >✕</button>
+                        </div>
+
+                        <form id="card-form">
+                            <input type="hidden" id="card-edit-id">
+
+                            <label for="card-name">Nome do card</label>
+                            <input
+                                type="text"
+                                id="card-name"
+                                placeholder="Ex.: Mizu — Hammerscale"
+                                required
+                            >
+
+                            <label for="card-episode">Episódio</label>
+                            <input
+                                type="text"
+                                id="card-episode"
+                                placeholder="Ex.: 01 - Hammerscale"
+                            >
+
+                            <label for="card-character">Personagem</label>
+                            <input
+                                type="text"
+                                id="card-character"
+                                placeholder="Ex.: Mizu"
+                            >
+
+                            <label for="card-rarity">Raridade</label>
+                            <select id="card-rarity" required>
+                                <option value="Comum">Comum</option>
+                                <option value="Incomum">Incomum</option>
+                                <option value="Rara">Rara</option>
+                                <option value="Épica">Épica</option>
+                                <option value="Lendária">Lendária</option>
+                            </select>
+
+                            <label for="card-image">Endereço da imagem (opcional)</label>
+                            <input
+                                type="text"
+                                id="card-image"
+                                placeholder="Ex.: imagens/mizu.jpg"
+                            >
+
+                            <label for="card-description">Descrição (opcional)</label>
+                            <textarea
+                                id="card-description"
+                                placeholder="Informações sobre o card..."
+                                rows="3"
+                            ></textarea>
+
+                            <div class="form-actions">
+                                <button
+                                    type="button"
+                                    class="secondary-button"
+                                    id="cancel-card"
+                                >Cancelar</button>
+
+                                <button type="submit" class="primary-button">
+                                    Salvar card
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ABRIR PACOTES -->
+            <section class="page" id="packs">
+                <div class="page-heading">
+                    <div>
+                        <p class="eyebrow">MOMENTO DA DESCOBERTA</p>
+                        <h2>Abrir pacotes</h2>
+                        <p>Use suas moedas para descobrir novos photocards.</p>
+                    </div>
+                </div>
+
+                <div class="coin-banner">
+                    <span>✧</span>
+                    <div>
+                        <p>Seu saldo</p>
+                        <strong><span id="pack-coins">500</span> moedas</strong>
+                    </div>
+                </div>
+
+                <div class="pack-grid">
+                    <article class="pack-card">
+                        <div class="pack-art common-pack">✦</div>
+                        <p class="eyebrow">PACOTE BÁSICO</p>
+                        <h3>Pacote Comum</h3>
+                        <p>Uma descoberta para sua coleção.</p>
+                        <div class="pack-price">100 moedas</div>
+                        <button class="primary-button pack-button" data-pack="1">
+                            Abrir pacote
+                        </button>
+                    </article>
+
+                    <article class="pack-card">
+                        <div class="pack-art rare-pack">✧</div>
+                        <p class="eyebrow">PACOTE ESPECIAL</p>
+                        <h3>Pacote Duplo</h3>
+                        <p>Duas oportunidades de encontrar cards.</p>
+                        <div class="pack-price">180 moedas</div>
+                        <button class="primary-button pack-button" data-pack="2">
+                            Abrir pacote
+                        </button>
+                    </article>
+
+                    <article class="pack-card">
+                        <div class="pack-art legendary-pack">✹</div>
+                        <p class="eyebrow">PACOTE PREMIUM</p>
+                        <h3>Pacote de Luxo</h3>
+                        <p>Cinco cards em uma única abertura.</p>
+                        <div class="pack-price">400 moedas</div>
+                        <button class="primary-button pack-button" data-pack="5">
+                            Abrir pacote
+                        </button>
+                    </article>
+                </div>
+
+                <article class="panel-card">
+                    <h3>Último pacote aberto</h3>
+                    <div id="pack-results" class="card-grid">
+                        <p class="empty-message">
+                            Os cards descobertos aparecerão aqui.
+                        </p>
+                    </div>
+                </article>
+            </section>
+
+            <!-- MINHA COLEÇÃO -->
+            <section class="page" id="collection">
+                <div class="page-heading">
+                    <div>
+                        <p class="eyebrow">MINHAS DESCOBERTAS</p>
+                        <h2>Minha coleção</h2>
+                        <p>Veja os cards que você já conseguiu.</p>
+                    </div>
+                </div>
+
+                <div class="filter-bar">
+                    <input
+                        type="search"
+                        id="collection-search"
+                        placeholder="Buscar na coleção..."
+                        aria-label="Buscar na coleção"
+                    >
+
+                    <select id="collection-rarity-filter">
+                        <option value="all">Todas as raridades</option>
+                    </select>
+
+                    <select id="collection-status-filter">
+                        <option value="all">Todos os cards</option>
+                        <option value="owned">Sem duplicatas</option>
+                        <option value="duplicates">Com duplicatas</option>
+                    </select>
+                </div>
+
+                <div id="collection-grid" class="card-grid">
+                    <div class="empty-state">
+                        <span>▦</span>
+                        <h3>Sua coleção está esperando</h3>
+                        <p>Abra um pacote para conseguir seus primeiros cards.</p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- MISSÕES -->
+            <section class="page" id="missions">
+                <div class="page-heading">
+                    <div>
+                        <p class="eyebrow">OBJETIVOS E RECOMPENSAS</p>
+                        <h2>Missões</h2>
+                        <p>Complete objetivos para ganhar moedas.</p>
+                    </div>
+                </div>
+
+                <div class="stats-grid">
+                    <article class="stat-card">
+                        <span class="stat-icon">⚑</span>
+                        <p>Missões concluídas</p>
+                        <strong id="missions-completed">0</strong>
+                    </article>
+
+                    <article class="stat-card">
+                        <span class="stat-icon">✧</span>
+                        <p>Moedas recebidas</p>
+                        <strong id="mission-coins-earned">0</strong>
+                    </article>
+                </div>
+
+                <div id="missions-list" class="mission-list">
+                    <p class="empty-message">
+                        Suas missões aparecerão aqui.
+                    </p>
+                </div>
+            </section>
+
+            <!-- DUPLICATAS E TROCAS -->
+            <section class="page" id="trades">
+                <div class="page-heading">
+                    <div>
+                        <p class="eyebrow">GERENCIAMENTO DE CÓPIAS</p>
+                        <h2>Duplicatas</h2>
+                        <p>Organize suas cópias extras e troque-as por pontos.</p>
+                    </div>
+                </div>
+
+                <div class="stats-grid">
+                    <article class="stat-card">
+                        <span class="stat-icon">▦</span>
+                        <p>Cópias extras</p>
+                        <strong id="duplicate-count">0</strong>
+                    </article>
+
+                    <article class="stat-card">
+                        <span class="stat-icon">✧</span>
+                        <p>Pontos disponíveis</p>
+                        <strong id="trade-points">0</strong>
+                    </article>
+                </div>
+
+                <article class="panel-card">
+                    <div class="section-heading">
+                        <div>
+                            <h3>Minhas duplicatas</h3>
+                            <p>Você poderá converter cópias extras em pontos.</p>
+                        </div>
+                    </div>
+
+                    <div id="duplicates-list" class="duplicate-list">
+                        <p class="empty-message">
+                            Você ainda não possui duplicatas.
+                        </p>
+                    </div>
+                </article>
+
+                <article class="panel-card">
+                    <h3>Histórico de conversões</h3>
+                    <div id="trade-history">
+                        <p class="empty-message">
+                            Suas conversões aparecerão aqui.
+                        </p>
+                    </div>
+                </article>
+            </section>
+
+            <!-- CONFIGURAÇÕES -->
+            <section class="page" id="settings">
+                <div class="page-heading">
+                    <div>
+                        <p class="eyebrow">PERSONALIZE SUA EXPERIÊNCIA</p>
+                        <h2>Configurações</h2>
+                        <p>Defina as regras da sua coleção.</p>
+                    </div>
+                </div>
+
+                <article class="panel-card">
+                    <h3>Informações da coleção</h3>
+
+                    <form id="settings-form">
+                        <label for="series-name">Nome da coleção</label>
+                        <input
+                            type="text"
+                            id="series-name"
+                            value="Blue Eye Samurai"
+                        >
+
+                        <label for="initial-coins">Moedas iniciais</label>
+                        <input
+                            type="number"
+                            id="initial-coins"
+                            min="0"
+                            value="500"
+                        >
+
+                        <label for="duplicate-points">Pontos por duplicata</label>
+                        <input
+                            type="number"
+                            id="duplicate-points"
+                            min="1"
+                            value="10"
+                        >
+
+                        <button type="submit" class="primary-button">
+                            Salvar configurações
+                        </button>
+                    </form>
+                </article>
+
+                <article class="panel-card danger-zone">
+                    <h3>Reiniciar progresso</h3>
+                    <p>
+                        Isso apaga o progresso salvo neste navegador.
+                        Seus dados não poderão ser recuperados por este botão.
+                    </p>
+
+                    <button class="danger-button" id="reset-progress">
+                        Reiniciar progresso
+                    </button>
+                </article>
+            </section>
+
+        </main>
+
+        <!-- RODAPÉ -->
+        <footer class="footer">
+            <p>Photocard Archive · Seu arquivo, suas regras.</p>
+        </footer>
+
+        <!-- AVISOS -->
+        <div id="toast-container" class="toast-container" aria-live="polite"></div>
+
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>

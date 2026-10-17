@@ -1,0 +1,20 @@
+
+{
+  "name": "Photocard Archive",
+  "short_name": "Photocard",
+  "description": "Seu arquivo pessoal de photocards",
+  "lang": "pt-BR",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#111019",
+  "theme_color": "#171522",
+  "icons": [
+    {
+      "src": "./icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
+}
