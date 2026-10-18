@@ -853,19 +853,41 @@ function installPackAnimationStyles() {
             color: #d0c6e5;
         }
 
-        .pack-skip-button {
-            padding: 12px 20px;
-            border: 1px solid #c8b1ff;
-            border-radius: 999px;
-            background: #382452;
-            color: white;
-            font-size: 1rem;
-            cursor: pointer;
-        }
+        
+.pack-skip-button {
+    position: fixed;
+    top: max(16px, env(safe-area-inset-top));
+    right: max(16px, env(safe-area-inset-right));
+    z-index: 100010;
 
-        .pack-skip-button:hover {
-            background: #563b7b;
-        }
+    padding: 12px 18px;
+    border: 1px solid #c8b1ff;
+    border-radius: 999px;
+
+    background: #382452;
+    color: white;
+    font-size: 0.95rem;
+    font-weight: 600;
+
+    cursor: pointer;
+    box-shadow: 0 4px 16px #0006;
+    transition: background 0.2s ease, transform 0.2s ease;
+}
+
+.pack-skip-button:hover {
+    background: #563b7b;
+    transform: scale(1.04);
+}
+
+@media (max-width: 480px) {
+    .pack-skip-button {
+        top: max(12px, env(safe-area-inset-top));
+        right: max(12px, env(safe-area-inset-right));
+        padding: 10px 14px;
+        font-size: 0.85rem;
+    }
+}
+
 
         /* Tela de revelação individual */
 
@@ -1167,11 +1189,10 @@ function showPackSummary(results) {
             return `
                 <div class="pack-summary-card">
                     ${createPhotocardHTML(item.card)}
-                    ${
-                        item.quantity > 1
-                            ? `<span class="pack-copy-count">×${item.quantity}</span>`
-                            : ""
-                    }
+                    ${item.quantity > 1
+                    ? `<span class="pack-copy-count">×${item.quantity}</span>`
+                    : ""
+                }
                 </div>
             `;
         }).join("");
