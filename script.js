@@ -1008,26 +1008,320 @@ function installPackAnimationStyles() {
 function showPackOpeningAnimation() {
     installPackAnimationStyles();
 
-    const container = $("#pack-results");
-    if (!container) return null;
+    
+function installPackAnimationStyles() {
+    if (document.getElementById("pack-animation-styles")) return;
 
-    container.innerHTML = `
-        <div class="pack-opening-stage" id="pack-opening-stage" role="status" aria-live="polite">
-            <div class="pack-3d" aria-hidden="true">
-                <div class="pack-3d-top"></div>
-                <div class="pack-3d-body">
-                    <div class="pack-3d-ribbon"></div>
-                    <div class="pack-3d-emblem">✦</div>
-                </div>
-            </div>
-            <h3 class="pack-opening-text" id="pack-opening-text">Preparando sua descoberta...</h3>
-            <p class="pack-opening-subtext">Seu próximo photocard está chegando.</p>
-        </div>
+    const style = document.createElement("style");
+    style.id = "pack-animation-styles";
+
+    style.textContent = `
+        /* Pacote centralizado com fundo escuro */
+        #pack-results .pack-opening-stage {
+            position: fixed;
+            inset: 0;
+            z-index: 99999;
+            width: 100%;
+            height: 100%;
+            min-height: 100vh;
+            min-height: 100dvh;
+            box-sizing: border-box;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 22px;
+            padding: 24px;
+            text-align: center;
+            perspective: 1000px;
+            background: rgba(0, 0, 0, 0.68);
+            backdrop-filter: blur(3px);
+            -webkit-backdrop-filter: blur(3px);
+            overflow: hidden;
+        }
+
+        #pack-results .pack-3d {
+            position: relative;
+            flex-shrink: 0;
+            width: 150px;
+            height: 205px;
+            transform-style: preserve-3d;
+            animation: packFloat 1.5s ease-in-out infinite;
+        }
+
+        #pack-results .pack-3d-body {
+            position: absolute;
+            inset: 0;
+            border: 2px solid #c8b1ff;
+            border-radius: 18px;
+            background: linear-gradient(135deg, #483071, #1b152d 68%, #7452b5);
+            box-shadow: 0 18px 45px #0008, inset 0 0 24px #c6a4ff33;
+            transform-style: preserve-3d;
+            overflow: hidden;
+        }
+
+        #pack-results .pack-3d-body:before {
+            content: "";
+            position: absolute;
+            inset: 12px;
+            border: 1px solid #cbb6ff99;
+            border-radius: 11px;
+            background: radial-gradient(circle at 50% 35%, #bda0ff55, transparent 48%);
+        }
+
+        #pack-results .pack-3d-emblem {
+            position: absolute;
+            inset: 0;
+            display: grid;
+            place-items: center;
+            font-size: 58px;
+            color: #f3eaff;
+            text-shadow: 0 0 22px #c6a4ff;
+        }
+
+        #pack-results .pack-3d-ribbon {
+            position: absolute;
+            left: calc(50% - 9px);
+            top: 0;
+            width: 18px;
+            height: 100%;
+            background: linear-gradient(90deg, #a78bfa, #f0e7ff, #8b6bd6);
+            opacity: 0.85;
+            box-shadow: 0 0 12px #c7a8ff66;
+        }
+
+        #pack-results .pack-3d-top {
+            position: absolute;
+            z-index: 2;
+            left: -5px;
+            right: -5px;
+            top: -14px;
+            height: 35px;
+            border: 2px solid #d8c7ff;
+            border-radius: 10px;
+            background: linear-gradient(135deg, #9270d5, #382452);
+            transform-origin: bottom center;
+            transform: rotateX(0deg);
+            transition: transform 0.65s cubic-bezier(0.2, 0.8, 0.2, 1);
+        }
+
+        #pack-results .pack-opening-stage.is-opening .pack-3d {
+            animation: packShake 0.55s ease-in-out 2;
+        }
+
+        #pack-results .pack-opening-stage.is-opening .pack-3d-top {
+            transform: translateY(-28px) rotateX(115deg);
+        }
+
+        #pack-results .pack-opening-stage.is-opening .pack-3d-body {
+            animation: packGlow 0.8s ease-in-out 2 alternate;
+        }
+
+        #pack-results .pack-opening-stage.is-open .pack-3d {
+            animation: packBurst 0.65s ease-out forwards;
+        }
+
+        #pack-results .pack-opening-stage.is-open .pack-3d-top {
+            transform: translateY(-48px) rotateX(145deg);
+        }
+
+        #pack-results .pack-opening-stage.is-open .pack-3d-body {
+            box-shadow: 0 0 55px #b99affaa, inset 0 0 30px #c6a4ff55;
+        }
+
+        #pack-results .pack-opening-text {
+            margin: 0;
+            color: #f4efff;
+        }
+
+        #pack-results .pack-opening-subtext {
+            margin: 0;
+            color: #d0c6e5;
+        }
+
+        /* Fundo da revelação individual */
+        .card-reveal-overlay {
+            position: fixed;
+            inset: 0;
+            z-index: 100000;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 18px;
+            box-sizing: border-box;
+            padding: 22px;
+            overflow-y: auto;
+            background: rgba(0, 0, 0, 0.82);
+            backdrop-filter: blur(5px);
+            -webkit-backdrop-filter: blur(5px);
+            cursor: pointer;
+            text-align: center;
+            animation: revealOverlayIn 0.3s ease-out both;
+        }
+
+        .card-reveal-overlay .revealed-card-wrapper {
+            width: min(88vw, 360px);
+            max-width: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            animation: revealCardEnter 0.6s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+        }
+
+        .card-reveal-overlay .reveal-scene {
+            width: 100%;
+            max-width: 340px;
+            margin: 0 auto;
+        }
+
+        .card-reveal-overlay .reveal-card {
+            transform-style: preserve-3d;
+        }
+
+        .card-reveal-overlay .reveal-caption {
+            margin: 12px 0 0;
+        }
+
+        .reveal-click-hint {
+            color: #f4efff;
+            font-size: 0.95rem;
+            line-height: 1.5;
+            margin: 4px 0 0;
+            padding: 10px 16px;
+            border: 1px solid rgba(203, 182, 255, 0.45);
+            border-radius: 999px;
+            background: rgba(45, 31, 70, 0.82);
+            box-shadow: 0 4px 24px #0005;
+            animation: hintPulse 1.6s ease-in-out infinite;
+            pointer-events: none;
+        }
+
+        @keyframes packFloat {
+            0%, 100% { transform: translateY(0) rotateY(-8deg) rotateX(4deg); }
+            50% { transform: translateY(-9px) rotateY(8deg) rotateX(-3deg); }
+        }
+
+        @keyframes packShake {
+            0%, 100% { transform: translateX(0) rotateZ(0); }
+            25% { transform: translateX(-7px) rotateZ(-4deg); }
+            75% { transform: translateX(7px) rotateZ(4deg); }
+        }
+
+        @keyframes packGlow {
+            from { filter: brightness(1); }
+            to { filter: brightness(1.8); }
+        }
+
+        @keyframes packBurst {
+            0% { transform: scale(1) rotateY(0); }
+            60% { transform: scale(1.12) rotateY(20deg); }
+            100% { transform: scale(0.92) rotateY(0); opacity: 0.2; }
+        }
+
+        @keyframes revealOverlayIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        @keyframes revealCardEnter {
+            0% {
+                opacity: 0;
+                transform: translateY(24px) scale(0.88) rotateY(16deg);
+            }
+            65% {
+                opacity: 1;
+                transform: translateY(-4px) scale(1.03) rotateY(-3deg);
+            }
+            100% {
+                opacity: 1;
+                transform: translateY(0) scale(1) rotateY(0);
+            }
+        }
+
+        @keyframes hintPulse {
+            0%, 100% { opacity: 0.78; }
+            50% { opacity: 1; }
+        }
+
+        @media (max-width: 480px) {
+            #pack-results .pack-opening-stage {
+                gap: 18px;
+                padding: 16px;
+            }
+
+            #pack-results .pack-3d {
+                width: 130px;
+                height: 180px;
+            }
+
+            .card-reveal-overlay {
+                padding: 14px;
+                gap: 14px;
+            }
+
+            .card-reveal-overlay .revealed-card-wrapper {
+                width: min(90vw, 330px);
+            }
+
+            .reveal-click-hint {
+                font-size: 0.88rem;
+            }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            #pack-results .pack-3d,
+            #pack-results .pack-opening-stage.is-opening .pack-3d,
+            .reveal-click-hint {
+                animation: none;
+            }
+
+            #pack-results .pack-3d-top {
+                transition: none;
+            }
+
+            .card-reveal-overlay,
+            .card-reveal-overlay .revealed-card-wrapper {
+                animation: none;
+            }
+        }
     `;
 
-    return $("#pack-opening-stage");
+    document.head.appendChild(style);
 }
+
+function waitForRevealClick(overlay) {
+    return new Promise(resolve => {
+        let finished = false;
+
+        function finish() {
+            if (finished) return;
+            finished = true;
+
+            overlay.removeEventListener("click", finish);
+            overlay.removeEventListener("keydown", onKeyDown);
+
+            resolve();
+        }
+
+        function onKeyDown(event) {
+            if (event.key === "Enter" || event.key === " ") {
+                event.preventDefault();
+                finish();
+            }
+        }
+
+        overlay.addEventListener("click", finish);
+        overlay.addEventListener("keydown", onKeyDown);
+
+        overlay.tabIndex = 0;
+        overlay.focus({ preventScroll: true });
+    });
+}
+}
+
 /* PROCESSO DE ABERTURA */
+
 
 async function openPack(amount) {
     if (isOpeningPack) return;
@@ -1036,10 +1330,7 @@ async function openPack(amount) {
     if (!price) return;
 
     if (state.cards.length === 0) {
-        showToast(
-            "Cadastre cards no catálogo antes de abrir pacotes.",
-            "error"
-        );
+        showToast("Cadastre cards no catálogo antes de abrir pacotes.", "error");
         showPage("catalog");
         return;
     }
@@ -1049,15 +1340,11 @@ async function openPack(amount) {
         return;
     }
 
-    // Sorteia as cartas antes de cobrar.
     const results = [];
 
     for (let i = 0; i < amount; i++) {
         const card = drawCard();
-
-        if (card) {
-            results.push(card);
-        }
+        if (card) results.push(card);
     }
 
     if (results.length === 0) {
@@ -1065,29 +1352,26 @@ async function openPack(amount) {
         return;
     }
 
-    isOpeningPack = true;
-
-    const buttons = $$(".pack-button");
-    buttons.forEach(button => {
-        button.disabled = true;
-    });
-
     const resultsContainer = $("#pack-results");
 
     if (!resultsContainer) {
-        isOpeningPack = false;
         showToast("Não encontrei a área de abertura (#pack-results) no index.html.", "error");
         return;
     }
 
-    const openingStage = showPackOpeningAnimation();
-    showPage("packs");
+    isOpeningPack = true;
+
+    $$(".pack-button").forEach(button => {
+        button.disabled = true;
+    });
 
     try {
-        // O áudio é iniciado diretamente após o clique do usuário.
+        const openingStage = showPackOpeningAnimation();
+        showPage("packs");
+
+        /* Toca o som e inicia a animação do pacote */
         await playSound("sound-open-pack", { showError: true });
 
-        // Anima o pacote 3D antes de revelar as cartas.
         if (openingStage) {
             openingStage.classList.add("is-opening");
 
@@ -1111,52 +1395,69 @@ async function openPack(amount) {
 
         await wait(450);
 
-        // Cobra o pacote uma única vez.
+        /* Cobra o pacote uma única vez */
         state.coins -= price;
+        saveState();
 
-        // Limpa o painel antes de começar a sequência.
+        /* Remove a animação do pacote */
         resultsContainer.innerHTML = "";
 
+        /* Revela uma carta por vez */
         for (let i = 0; i < results.length; i++) {
             const card = results[i];
+
+            const overlay = document.createElement("div");
+            overlay.className = "card-reveal-overlay";
+            overlay.setAttribute("role", "button");
+            overlay.setAttribute("aria-label",
+                `Carta ${i + 1} de ${results.length}. Clique para continuar.`
+            );
 
             const wrapper = document.createElement("div");
             wrapper.className = "revealed-card-wrapper";
             wrapper.innerHTML = createRevealHTML(card);
 
-            resultsContainer.appendChild(wrapper);
+            overlay.appendChild(wrapper);
 
-            // Dispara a animação da carta.
-            wrapper.classList.add("reveal-started");
+            const hint = document.createElement("p");
+            hint.className = "reveal-click-hint";
 
-            // O som da raridade toca quando a carta é revelada.
+            hint.textContent = i < results.length - 1
+                ? `Carta ${i + 1} de ${results.length} — clique para revelar a próxima`
+                : `Carta ${i + 1} de ${results.length} — clique para terminar`;
+
+            overlay.appendChild(hint);
+            document.body.appendChild(overlay);
+
+            /* Inicia a animação da carta */
+            requestAnimationFrame(() => {
+                wrapper.classList.add("reveal-started");
+            });
+
+            /* Toca o som correspondente à raridade */
             await playRaritySound(card);
 
-            // A carta passa a fazer parte da coleção.
+            /* Adiciona a carta à coleção quando ela é revelada */
             state.inventory[card.id] = getInventoryCount(card.id) + 1;
 
-            addActivity(
-                `Card descoberto: ${card.name} (${card.rarity})`
-            );
+            addActivity(`Card descoberto: ${card.name} (${card.rarity})`);
 
             saveState();
             renderAll();
 
-            // Dá tempo para ver a carta antes da próxima revelação.
-            await wait(1500);
+            /* Espera pelo clique antes de mostrar a próxima carta */
+            await waitForRevealClick(overlay);
+
+            overlay.remove();
         }
 
-        addActivity(
-            `Pacote aberto: ${results.length} card(s) descoberto(s)`
-        );
+        addActivity(`Pacote aberto: ${results.length} card(s) descoberto(s)`);
 
         saveState();
         renderAll();
 
-        showToast(
-            `Você descobriu ${results.length} card(s)!`,
-            "success"
-        );
+        showToast(`Você descobriu ${results.length} card(s)!`, "success");
+
     } catch (error) {
         console.error("Erro durante a abertura do pacote:", error);
 
@@ -1164,6 +1465,7 @@ async function openPack(amount) {
             "Ocorreu um problema durante a abertura do pacote.",
             "error"
         );
+
     } finally {
         isOpeningPack = false;
 
@@ -1177,6 +1479,7 @@ async function openPack(amount) {
         });
     }
 }
+
 
 /* RESUMO DE RARIDADES */
 
