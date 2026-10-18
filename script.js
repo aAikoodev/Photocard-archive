@@ -728,8 +728,10 @@ $$(".pack-button").forEach(button => {
     });
 });
 
-/* ANIMAÇÃO 3D DO PACOTE — estilos incluídos pelo próprio JavaScript */
 
+/* ========================================
+   ANIMAÇÃO 3D DO PACOTE E REVELAÇÃO
+======================================== */
 
 function installPackAnimationStyles() {
     if (document.getElementById("pack-animation-styles")) return;
@@ -738,408 +740,128 @@ function installPackAnimationStyles() {
     style.id = "pack-animation-styles";
 
     style.textContent = `
-        /* Fundo escuro cobrindo a tela inteira */
+        /* Tela de abertura do pacote */
         #pack-results .pack-opening-stage {
             position: fixed;
             inset: 0;
             z-index: 99999;
-
+            box-sizing: border-box;
             width: 100%;
-            height: 100%;
             min-height: 100vh;
             min-height: 100dvh;
-            box-sizing: border-box;
-
+            padding: 24px;
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
             gap: 22px;
-
-            padding: 24px;
             text-align: center;
+            background: rgba(0, 0, 0, 0.88);
             perspective: 1000px;
+        }
 
-            background: rgba(0, 0, 0, 0.68);
-            backdrop-filter: blur(3px);
-            -webkit-backdrop-filter: blur(3px);
-
-            overflow: hidden;
+        .pack-opening-stage * {
+            box-sizing: border-box;
         }
 
         /* Pacote 3D */
         #pack-results .pack-3d {
             position: relative;
-            flex-shrink: 0;
             width: 150px;
             height: 205px;
+            flex-shrink: 0;
             transform-style: preserve-3d;
             animation: packFloat 1.5s ease-in-out infinite;
         }
 
-        /* Corpo do pacote */
-        #pack-results .pack-3d-body {
+        .pack-3d-body {
             position: absolute;
             inset: 0;
-
+            overflow: hidden;
             border: 2px solid #c8b1ff;
             border-radius: 18px;
-
             background: linear-gradient(
                 135deg,
                 #483071,
                 #1b152d 68%,
                 #7452b5
             );
-
             box-shadow:
                 0 18px 45px #0008,
                 inset 0 0 24px #c6a4ff33;
-
-            transform-style: preserve-3d;
-            overflow: hidden;
         }
 
-        /* Detalhes internos do pacote */
-        #pack-results .pack-3d-body:before {
-            content: "";
-            position: absolute;
-            inset: 12px;
-
-            border: 1px solid #cbb6ff99;
-            border-radius: 11px;
-
-            background: radial-gradient(
-                circle at 50% 35%,
-                #bda0ff55,
-                transparent 48%
-            );
-        }
-
-        /* Símbolo central */
-        #pack-results .pack-3d-emblem {
+        .pack-3d-emblem {
             position: absolute;
             inset: 0;
-
             display: grid;
             place-items: center;
-
-            font-size: 58px;
             color: #f3eaff;
+            font-size: 58px;
             text-shadow: 0 0 22px #c6a4ff;
         }
 
-        /* Fita vertical */
-        #pack-results .pack-3d-ribbon {
+        .pack-3d-ribbon {
             position: absolute;
-            left: calc(50% - 9px);
             top: 0;
-
+            left: calc(50% - 9px);
             width: 18px;
             height: 100%;
-
             background: linear-gradient(
                 90deg,
                 #a78bfa,
                 #f0e7ff,
                 #8b6bd6
             );
-
             opacity: 0.85;
-            box-shadow: 0 0 12px #c7a8ff66;
         }
 
-        /* Tampa do pacote */
-        #pack-results .pack-3d-top {
+        .pack-3d-top {
             position: absolute;
             z-index: 2;
-
+            top: -14px;
             left: -5px;
             right: -5px;
-            top: -14px;
-
-            height: 35px;
-
-            border: 2px solid #d8c7ff;
-            border-radius: 10px;
-
-            background: linear-gradient(
-                135deg,
-                #9270d5,
-                #382452
-            );
-
-            transform-origin: bottom center;
-            transform: rotateX(0deg);
-
-            transition:
-                transform 0.65s cubic-bezier(0.2, 0.8, 0.2, 1);
-        }
-
-        /* Movimento ao começar a abrir */
-        #pack-results .pack-opening-stage.is-opening .pack-3d {
-            animation: packShake 0.55s ease-in-out 2;
-        }
-
-        #pack-results .pack-opening-stage.is-opening .pack-3d-top {
-            transform: translateY(-28px) rotateX(115deg);
-        }
-
-        #pack-results .pack-opening-stage.is-opening .pack-3d-body {
-            animation: packGlow 0.8s ease-in-out 2 alternate;
-        }
-
-        /* Efeito final de abertura */
-        #pack-results .pack-opening-stage.is-open .pack-3d {
-            animation: packBurst 0.65s ease-out forwards;
-        }
-
-        #pack-results .pack-opening-stage.is-open .pack-3d-top {
-            transform: translateY(-48px) rotateX(145deg);
-        }
-
-        #pack-results .pack-opening-stage.is-open .pack-3d-body {
-            box-shadow:
-                0 0 55px #b99affaa,
-                inset 0 0 30px #c6a4ff55;
-        }
-
-        /* Texto da animação */
-        #pack-results .pack-opening-text {
-            margin: 0;
-            color: #f4efff;
-            max-width: 100%;
-        }
-
-        #pack-results .pack-opening-subtext {
-            margin: 0;
-            color: #d0c6e5;
-            max-width: 100%;
-        }
-
-        /* Animações */
-        @keyframes packFloat {
-            0%, 100% {
-                transform: translateY(0) rotateY(-8deg) rotateX(4deg);
-            }
-
-            50% {
-                transform: translateY(-9px) rotateY(8deg) rotateX(-3deg);
-            }
-        }
-
-        @keyframes packShake {
-            0%, 100% {
-                transform: translateX(0) rotateZ(0);
-            }
-
-            25% {
-                transform: translateX(-7px) rotateZ(-4deg);
-            }
-
-            75% {
-                transform: translateX(7px) rotateZ(4deg);
-            }
-        }
-
-        @keyframes packGlow {
-            from {
-                filter: brightness(1);
-            }
-
-            to {
-                filter: brightness(1.8);
-            }
-        }
-
-        @keyframes packBurst {
-            0% {
-                transform: scale(1) rotateY(0);
-            }
-
-            60% {
-                transform: scale(1.12) rotateY(20deg);
-            }
-
-            100% {
-                transform: scale(0.92) rotateY(0);
-                opacity: 0.2;
-            }
-        }
-
-        /* Ajustes para telas pequenas */
-        @media (max-width: 480px) {
-            #pack-results .pack-opening-stage {
-                gap: 18px;
-                padding: 16px;
-            }
-
-            #pack-results .pack-3d {
-                width: 130px;
-                height: 180px;
-            }
-
-            #pack-results .pack-opening-text {
-                font-size: 1.1rem;
-            }
-
-            #pack-results .pack-opening-subtext {
-                font-size: 0.9rem;
-            }
-        }
-
-        /* Respeita a preferência por menos animações */
-        @media (prefers-reduced-motion: reduce) {
-            #pack-results .pack-3d,
-            #pack-results .pack-opening-stage.is-opening .pack-3d {
-                animation: none;
-            }
-
-            #pack-results .pack-3d-top {
-                transition: none;
-            }
-        }
-    `;
-
-    document.head.appendChild(style);
-}
-
-
-function showPackOpeningAnimation() {
-    installPackAnimationStyles();
-
-
-    function installPackAnimationStyles() {
-        if (document.getElementById("pack-animation-styles")) return;
-
-        const style = document.createElement("style");
-        style.id = "pack-animation-styles";
-
-        style.textContent = `
-        /* Pacote centralizado com fundo escuro */
-        #pack-results .pack-opening-stage {
-            position: fixed;
-            inset: 0;
-            z-index: 99999;
-            width: 100%;
-            height: 100%;
-            min-height: 100vh;
-            min-height: 100dvh;
-            box-sizing: border-box;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            gap: 22px;
-            padding: 24px;
-            text-align: center;
-            perspective: 1000px;
-            background: rgba(0, 0, 0, 0.68);
-            backdrop-filter: blur(3px);
-            -webkit-backdrop-filter: blur(3px);
-            overflow: hidden;
-        }
-
-        #pack-results .pack-3d {
-            position: relative;
-            flex-shrink: 0;
-            width: 150px;
-            height: 205px;
-            transform-style: preserve-3d;
-            animation: packFloat 1.5s ease-in-out infinite;
-        }
-
-        #pack-results .pack-3d-body {
-            position: absolute;
-            inset: 0;
-            border: 2px solid #c8b1ff;
-            border-radius: 18px;
-            background: linear-gradient(135deg, #483071, #1b152d 68%, #7452b5);
-            box-shadow: 0 18px 45px #0008, inset 0 0 24px #c6a4ff33;
-            transform-style: preserve-3d;
-            overflow: hidden;
-        }
-
-        #pack-results .pack-3d-body:before {
-            content: "";
-            position: absolute;
-            inset: 12px;
-            border: 1px solid #cbb6ff99;
-            border-radius: 11px;
-            background: radial-gradient(circle at 50% 35%, #bda0ff55, transparent 48%);
-        }
-
-        #pack-results .pack-3d-emblem {
-            position: absolute;
-            inset: 0;
-            display: grid;
-            place-items: center;
-            font-size: 58px;
-            color: #f3eaff;
-            text-shadow: 0 0 22px #c6a4ff;
-        }
-
-        #pack-results .pack-3d-ribbon {
-            position: absolute;
-            left: calc(50% - 9px);
-            top: 0;
-            width: 18px;
-            height: 100%;
-            background: linear-gradient(90deg, #a78bfa, #f0e7ff, #8b6bd6);
-            opacity: 0.85;
-            box-shadow: 0 0 12px #c7a8ff66;
-        }
-
-        #pack-results .pack-3d-top {
-            position: absolute;
-            z-index: 2;
-            left: -5px;
-            right: -5px;
-            top: -14px;
             height: 35px;
             border: 2px solid #d8c7ff;
             border-radius: 10px;
             background: linear-gradient(135deg, #9270d5, #382452);
             transform-origin: bottom center;
-            transform: rotateX(0deg);
-            transition: transform 0.65s cubic-bezier(0.2, 0.8, 0.2, 1);
+            transition: transform 0.65s ease;
         }
 
-        #pack-results .pack-opening-stage.is-opening .pack-3d {
+        .pack-opening-stage.is-opening .pack-3d {
             animation: packShake 0.55s ease-in-out 2;
         }
 
-        #pack-results .pack-opening-stage.is-opening .pack-3d-top {
+        .pack-opening-stage.is-opening .pack-3d-top {
             transform: translateY(-28px) rotateX(115deg);
         }
 
-        #pack-results .pack-opening-stage.is-opening .pack-3d-body {
+        .pack-opening-stage.is-opening .pack-3d-body {
             animation: packGlow 0.8s ease-in-out 2 alternate;
         }
 
-        #pack-results .pack-opening-stage.is-open .pack-3d {
+        .pack-opening-stage.is-open .pack-3d {
             animation: packBurst 0.65s ease-out forwards;
         }
 
-        #pack-results .pack-opening-stage.is-open .pack-3d-top {
+        .pack-opening-stage.is-open .pack-3d-top {
             transform: translateY(-48px) rotateX(145deg);
         }
 
-        #pack-results .pack-opening-stage.is-open .pack-3d-body {
-            box-shadow: 0 0 55px #b99affaa, inset 0 0 30px #c6a4ff55;
-        }
-
-        #pack-results .pack-opening-text {
+        .pack-opening-text {
             margin: 0;
             color: #f4efff;
+            font-size: 1.3rem;
         }
 
-        #pack-results .pack-opening-subtext {
+        .pack-opening-subtext {
             margin: 0;
             color: #d0c6e5;
         }
 
-        /* Fundo da revelação individual */
+        /* Tela de revelação da carta */
         .card-reveal-overlay {
             position: fixed;
             inset: 0;
@@ -1150,11 +872,9 @@ function showPackOpeningAnimation() {
             justify-content: center;
             gap: 18px;
             box-sizing: border-box;
-            padding: 22px;
+            padding: 20px;
             overflow-y: auto;
-            background: rgba(0, 0, 0, 0.82);
-            backdrop-filter: blur(5px);
-            -webkit-backdrop-filter: blur(5px);
+            background: rgba(0, 0, 0, 0.92);
             cursor: pointer;
             text-align: center;
             animation: revealOverlayIn 0.3s ease-out both;
@@ -1163,49 +883,42 @@ function showPackOpeningAnimation() {
         .card-reveal-overlay .revealed-card-wrapper {
             width: min(88vw, 360px);
             max-width: 100%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            animation: revealCardEnter 0.6s cubic-bezier(0.2, 0.8, 0.2, 1) both;
-        }
-
-        .card-reveal-overlay .reveal-scene {
-            width: 100%;
-            max-width: 340px;
-            margin: 0 auto;
-        }
-
-        .card-reveal-overlay .reveal-card {
-            transform-style: preserve-3d;
-        }
-
-        .card-reveal-overlay .reveal-caption {
-            margin: 12px 0 0;
+            animation: revealCardEnter 0.5s ease-out both;
         }
 
         .reveal-click-hint {
-            color: #f4efff;
+            position: relative;
+            z-index: 2;
+            margin: 8px 0 0;
+            padding: 12px 18px;
+            border: 1px solid rgba(203, 182, 255, 0.6);
+            border-radius: 999px;
+            background: #2d1f46;
+            color: #fff;
             font-size: 0.95rem;
             line-height: 1.5;
-            margin: 4px 0 0;
-            padding: 10px 16px;
-            border: 1px solid rgba(203, 182, 255, 0.45);
-            border-radius: 999px;
-            background: rgba(45, 31, 70, 0.82);
-            box-shadow: 0 4px 24px #0005;
-            animation: hintPulse 1.6s ease-in-out infinite;
             pointer-events: none;
         }
 
         @keyframes packFloat {
-            0%, 100% { transform: translateY(0) rotateY(-8deg) rotateX(4deg); }
-            50% { transform: translateY(-9px) rotateY(8deg) rotateX(-3deg); }
+            0%, 100% {
+                transform: translateY(0) rotateY(-8deg);
+            }
+            50% {
+                transform: translateY(-9px) rotateY(8deg);
+            }
         }
 
         @keyframes packShake {
-            0%, 100% { transform: translateX(0) rotateZ(0); }
-            25% { transform: translateX(-7px) rotateZ(-4deg); }
-            75% { transform: translateX(7px) rotateZ(4deg); }
+            0%, 100% {
+                transform: translateX(0) rotateZ(0);
+            }
+            25% {
+                transform: translateX(-7px) rotateZ(-4deg);
+            }
+            75% {
+                transform: translateX(7px) rotateZ(4deg);
+            }
         }
 
         @keyframes packGlow {
@@ -1214,9 +927,14 @@ function showPackOpeningAnimation() {
         }
 
         @keyframes packBurst {
-            0% { transform: scale(1) rotateY(0); }
-            60% { transform: scale(1.12) rotateY(20deg); }
-            100% { transform: scale(0.92) rotateY(0); opacity: 0.2; }
+            0% {
+                transform: scale(1);
+                opacity: 1;
+            }
+            100% {
+                transform: scale(0.7);
+                opacity: 0;
+            }
         }
 
         @keyframes revealOverlayIn {
@@ -1225,31 +943,17 @@ function showPackOpeningAnimation() {
         }
 
         @keyframes revealCardEnter {
-            0% {
+            from {
                 opacity: 0;
-                transform: translateY(24px) scale(0.88) rotateY(16deg);
+                transform: translateY(20px) scale(0.9);
             }
-            65% {
+            to {
                 opacity: 1;
-                transform: translateY(-4px) scale(1.03) rotateY(-3deg);
+                transform: translateY(0) scale(1);
             }
-            100% {
-                opacity: 1;
-                transform: translateY(0) scale(1) rotateY(0);
-            }
-        }
-
-        @keyframes hintPulse {
-            0%, 100% { opacity: 0.78; }
-            50% { opacity: 1; }
         }
 
         @media (max-width: 480px) {
-            #pack-results .pack-opening-stage {
-                gap: 18px;
-                padding: 16px;
-            }
-
             #pack-results .pack-3d {
                 width: 130px;
                 height: 180px;
@@ -1260,10 +964,6 @@ function showPackOpeningAnimation() {
                 gap: 14px;
             }
 
-            .card-reveal-overlay .revealed-card-wrapper {
-                width: min(90vw, 330px);
-            }
-
             .reveal-click-hint {
                 font-size: 0.88rem;
             }
@@ -1271,78 +971,119 @@ function showPackOpeningAnimation() {
 
         @media (prefers-reduced-motion: reduce) {
             #pack-results .pack-3d,
-            #pack-results .pack-opening-stage.is-opening .pack-3d,
             .reveal-click-hint {
                 animation: none;
             }
 
-            #pack-results .pack-3d-top {
+            .pack-3d-top {
                 transition: none;
             }
 
             .card-reveal-overlay,
-            .card-reveal-overlay .revealed-card-wrapper {
+            .revealed-card-wrapper {
                 animation: none;
             }
         }
     `;
 
-        document.head.appendChild(style);
-    }
-
-
-    function waitForRevealClick(overlay) {
-        return new Promise(resolve => {
-            let finished = false;
-
-            function finish(event) {
-                if (finished) return;
-
-                finished = true;
-
-                if (event) {
-                    event.preventDefault();
-                    event.stopPropagation();
-                }
-
-                overlay.removeEventListener("click", finish, true);
-                overlay.removeEventListener("keydown", onKeyDown);
-
-                // Remove a tela de revelação imediatamente.
-                overlay.remove();
-
-                // Libera a próxima carta.
-                resolve();
-            }
-
-            function onKeyDown(event) {
-                if (event.key === "Enter" || event.key === " ") {
-                    finish(event);
-                }
-            }
-
-            // Captura o clique mesmo quando ele acontece dentro da carta.
-            overlay.addEventListener("click", finish, true);
-            overlay.addEventListener("keydown", onKeyDown);
-
-            overlay.tabIndex = 0;
-            overlay.focus({ preventScroll: true });
-        });
-    }
-
+    document.head.appendChild(style);
 }
 
-/* PROCESSO DE ABERTURA */
 
+/* CRIA A ANIMAÇÃO DO PACOTE */
+
+function showPackOpeningAnimation() {
+    installPackAnimationStyles();
+
+    const resultsContainer = $("#pack-results");
+
+    if (!resultsContainer) {
+        throw new Error("A área #pack-results não foi encontrada.");
+    }
+
+    const stage = document.createElement("div");
+    stage.className = "pack-opening-stage";
+
+    stage.innerHTML = `
+        <div class="pack-3d" aria-hidden="true">
+            <div class="pack-3d-body">
+                <div class="pack-3d-ribbon"></div>
+                <div class="pack-3d-emblem">✦</div>
+            </div>
+            <div class="pack-3d-top"></div>
+        </div>
+
+        <h2 class="pack-opening-text" id="pack-opening-text">
+            Preparando seu pacote...
+        </h2>
+
+        <p class="pack-opening-subtext">
+            Uma nova descoberta está chegando!
+        </p>
+    `;
+
+    resultsContainer.replaceChildren(stage);
+
+    return stage;
+}
+
+
+/* ESPERA O CLIQUE PARA FECHAR A CARTA */
+
+function waitForRevealClick(overlay) {
+    return new Promise(resolve => {
+        let finished = false;
+
+        function finish(event) {
+            if (finished) return;
+
+            finished = true;
+
+            if (event) {
+                event.preventDefault();
+                event.stopPropagation();
+            }
+
+            overlay.removeEventListener("click", finish, true);
+            overlay.removeEventListener("keydown", onKeyDown);
+
+            // Remove a carta da tela.
+            overlay.remove();
+
+            // Permite continuar para a próxima carta.
+            resolve();
+        }
+
+        function onKeyDown(event) {
+            if (event.key === "Enter" || event.key === " ") {
+                finish(event);
+            }
+        }
+
+        // O clique funciona na carta, na imagem e no fundo.
+        overlay.addEventListener("click", finish, true);
+        overlay.addEventListener("keydown", onKeyDown);
+
+        overlay.tabIndex = 0;
+        overlay.focus({ preventScroll: true });
+    });
+}
+
+
+/* PROCESSO DE ABERTURA DOS PACOTES */
 
 async function openPack(amount) {
     if (isOpeningPack) return;
 
     const price = packPrices[amount];
+
     if (!price) return;
 
     if (state.cards.length === 0) {
-        showToast("Cadastre cards no catálogo antes de abrir pacotes.", "error");
+        showToast(
+            "Cadastre cards no catálogo antes de abrir pacotes.",
+            "error"
+        );
         showPage("catalog");
         return;
     }
@@ -1367,7 +1108,10 @@ async function openPack(amount) {
     const resultsContainer = $("#pack-results");
 
     if (!resultsContainer) {
-        showToast("Não encontrei a área de abertura (#pack-results) no index.html.", "error");
+        showToast(
+            "Não encontrei a área de abertura no index.html.",
+            "error"
+        );
         return;
     }
 
@@ -1378,43 +1122,48 @@ async function openPack(amount) {
     });
 
     try {
-        const openingStage = showPackOpeningAnimation();
+        // Mostra a página dos pacotes e cria a animação.
         showPage("packs");
 
-        /* Toca o som e inicia a animação do pacote */
-        await playSound("sound-open-pack", { showError: true });
+        const openingStage = showPackOpeningAnimation();
 
-        if (openingStage) {
-            openingStage.classList.add("is-opening");
+        // Tenta tocar o som sem deixar a abertura travada.
+        try {
+            await Promise.race([
+                playSound("sound-open-pack", { showError: true }),
+                wait(2500)
+            ]);
+        } catch (soundError) {
+            console.warn("Erro no som de abertura:", soundError);
+        }
 
-            const openingText = $("#pack-opening-text");
-            if (openingText) {
-                openingText.textContent = "O pacote está se abrindo...";
-            }
+        openingStage.classList.add("is-opening");
+
+        const openingText = $("#pack-opening-text");
+
+        if (openingText) {
+            openingText.textContent = "O pacote está se abrindo...";
         }
 
         await wait(1200);
 
-        if (openingStage) {
-            openingStage.classList.remove("is-opening");
-            openingStage.classList.add("is-open");
+        openingStage.classList.remove("is-opening");
+        openingStage.classList.add("is-open");
 
-            const openingText = $("#pack-opening-text");
-            if (openingText) {
-                openingText.textContent = "Sua descoberta está pronta!";
-            }
+        if (openingText) {
+            openingText.textContent = "Sua descoberta está pronta!";
         }
 
         await wait(450);
 
-        /* Cobra o pacote uma única vez */
+        // Cobra o valor do pacote apenas uma vez.
         state.coins -= price;
         saveState();
 
-        /* Remove a animação do pacote */
-        resultsContainer.innerHTML = "";
+        // Remove a animação do pacote antes de revelar as cartas.
+        resultsContainer.replaceChildren();
 
-        /* Revela uma carta por vez */
+        // Revela uma carta por vez.
         for (let i = 0; i < results.length; i++) {
             const card = results[i];
 
@@ -1439,47 +1188,65 @@ async function openPack(amount) {
                 : `Carta ${i + 1} de ${results.length} — clique para terminar`;
 
             overlay.appendChild(hint);
+
+            // Coloca a carta na tela.
             document.body.appendChild(overlay);
 
-            // Começa a escutar o clique imediatamente.
+            // Registra o clique imediatamente.
             const clickToContinue = waitForRevealClick(overlay);
 
-            /* Inicia a animação da carta */
-            requestAnimationFrame(() => {
-                wrapper.classList.add("reveal-started");
-            });
-
-            // O som toca sem bloquear a sequência de revelação.
+            // Toca o som da raridade sem bloquear os cliques.
             Promise.resolve()
                 .then(() => playRaritySound(card))
                 .catch(error => {
-                    console.warn("Não foi possível tocar o som da raridade:", error);
+                    console.warn("Erro no som da raridade:", error);
                 });
 
-            /* Adiciona a carta à coleção quando ela é revelada */
-            state.inventory[card.id] = getInventoryCount(card.id) + 1;
+            // Registra a carta na coleção.
+            state.inventory[card.id] =
+                getInventoryCount(card.id) + 1;
 
-            addActivity(`Card descoberto: ${card.name} (${card.rarity})`);
+            addActivity(
+                `Card descoberto: ${card.name} (${card.rarity})`
+            );
 
             saveState();
             renderAll();
 
+            // Aguarda o usuário clicar para avançar.
             await clickToContinue;
+        }
 
-        } // Fim da revelação de cada carta
-
-        addActivity(`Pacote aberto: ${results.length} card(s) descoberto(s)`);
+        addActivity(
+            `Pacote aberto: ${results.length} card(s) descoberto(s)`
+        );
 
         saveState();
         renderAll();
 
-        showToast(`Você descobriu ${results.length} card(s)!`, "success");
+        showToast(
+            `Você descobriu ${results.length} card(s)!`,
+            "success"
+        );
 
     } catch (error) {
         console.error("Erro durante a abertura do pacote:", error);
 
+        // Evita que uma falha deixe uma tela bloqueada.
+        const stuckOverlay = document.querySelector(
+            ".card-reveal-overlay"
+        );
+
+        if (stuckOverlay) stuckOverlay.remove();
+
+        const stage = document.querySelector(
+            "#pack-results .pack-opening-stage"
+        );
+
+        if (stage) stage.remove();
+
         showToast(
-            "Ocorreu um problema durante a abertura do pacote.",
+            "Ocorreu um problema durante a abertura. Confira o console.",
             "error"
         );
 
@@ -1487,16 +1254,17 @@ async function openPack(amount) {
         isOpeningPack = false;
 
         $$(".pack-button").forEach(button => {
-            const buttonPrice = packPrices[Number(button.dataset.pack)];
+            const buttonPrice =
+                packPrices[Number(button.dataset.pack)];
 
             button.disabled = state.coins < buttonPrice;
+
             button.title = button.disabled
                 ? "Moedas insuficientes"
                 : "Abrir pacote";
         });
     }
 }
-
 
 /* RESUMO DE RARIDADES */
 
