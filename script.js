@@ -934,6 +934,38 @@ function installPackAnimationStyles() {
             opacity: 1;
             transform: translateY(0) scale(1);
         }
+        
+        
+/* Zoom da carta revelada */
+.card-reveal-overlay .revealed-card-wrapper {
+    transform-origin: center center;
+    will-change: transform;
+}
+
+.card-reveal-overlay.card-zoomed {
+    overflow-y: auto;
+    perspective: 1200px;
+}
+
+.card-reveal-overlay.card-zoomed .revealed-card-wrapper {
+    transform: translateY(0) scale(1.25) !important;
+    z-index: 5;
+}
+
+/* Inclinação 3D durante a interação com a carta */
+.card-reveal-overlay .reveal-scene {
+    perspective: 1000px;
+}
+
+.card-reveal-overlay .reveal-card {
+    transform-style: preserve-3d;
+    transition: filter 0.25s ease;
+}
+
+.card-reveal-overlay.card-zoomed .reveal-card {
+    filter: drop-shadow(0 0 20px rgba(167, 139, 250, 0.55));
+}
+
 
         .reveal-click-hint {
             position: relative;
@@ -1093,7 +1125,7 @@ function showPackOpeningAnimation() {
     const stage = document.createElement("div");
     stage.className = "pack-opening-stage";
 
-   stage.innerHTML = `
+    stage.innerHTML = `
     <button type="button" class="pack-skip-button">
         Pular animação
     </button>
@@ -1109,14 +1141,27 @@ function showPackOpeningAnimation() {
 
 /* ESPERA O CLIQUE PARA REVELAR A PRÓXIMA CARTA */
 
+
 function waitForRevealClick(overlay, skipButton) {
     return new Promise(resolve => {
         let finished = false;
+        let clickTimer = null;
+
+        function cleanup() {
+            if (clickTimer !== null) {
+                clearTimeout(clickTimer);
+                clickTimer = null;
+            }
+
+            overlay.removeEventListener("click", onClick, true);
+            overlay.removeEventListener("dblclick", onDoubleClick, true);
+            overlay.removeEventListener("keydown", onKeyDown);
+            skipButton.removeEventListener("click", onSkip);
+        }
 
         function finish(event, skipping = false) {
             if (finished) return;
 
-            // Não deixa cliques em outros botões avançarem a carta.
             if (
                 !skipping &&
                 event?.target?.closest("button")
@@ -1131,27 +1176,54 @@ function waitForRevealClick(overlay, skipButton) {
                 event.stopPropagation();
             }
 
-            overlay.removeEventListener("click", onClick, true);
-            overlay.removeEventListener("keydown", onKeyDown);
-            skipButton.removeEventListener("click", onSkip);
+            cleanup();
 
-            // Se o usuário pediu para pular, ativa essa opção.
             if (skipping) {
                 skipCardAnimations = true;
             }
 
-            // A carta só desaparece depois da interação do usuário.
             overlay.remove();
-
             resolve();
         }
 
         function onClick(event) {
-            finish(event);
+            if (event.target.closest("button")) return;
+
+            event.preventDefault();
+            event.stopPropagation();
+
+            // Se já houve um clique, não avança a carta:
+            // o segundo clique será tratado como clique duplo.
+            if (clickTimer !== null) {
+                clearTimeout(clickTimer);
+                clickTimer = null;
+                return;
+            }
+
+            // Aguarda para verificar se haverá um segundo clique.
+            clickTimer = setTimeout(() => {
+                clickTimer = null;
+                finish();
+            }, 300);
+        }
+
+        function onDoubleClick(event) {
+            if (event.target.closest("button")) return;
+
+            event.preventDefault();
+            event.stopPropagation();
+
+            if (clickTimer !== null) {
+                clearTimeout(clickTimer);
+                clickTimer = null;
+            }
+
+            overlay.classList.toggle("card-zoomed");
         }
 
         function onKeyDown(event) {
             if (event.key === "Enter" || event.key === " ") {
+                event.preventDefault();
                 finish(event);
             }
         }
@@ -1161,14 +1233,15 @@ function waitForRevealClick(overlay, skipButton) {
         }
 
         overlay.addEventListener("click", onClick, true);
+        overlay.addEventListener("dblclick", onDoubleClick, true);
         overlay.addEventListener("keydown", onKeyDown);
-
         skipButton.addEventListener("click", onSkip);
 
         overlay.tabIndex = 0;
         overlay.focus({ preventScroll: true });
     });
 }
+
 
 
 /* TELA FINAL COM TODAS AS CARTAS DO PACOTE */
@@ -1924,3 +1997,38 @@ if ("serviceWorker" in navigator) {
             });
     });
 }
+
+/* ========================================
+   MOVIMENTO 3D COM O MOUSE
+======================================= */
+
+document.addEventListener("pointermove", event => {
+    // O efeito funciona apenas com mouse ou caneta.
+    if (event.pointerType === "touch") return;
+
+    const card = event.target.closest(".photocard, .reveal-scene");
+
+    if (!card) return;
+
+    const rect = card.getBoundingClientRect();
+
+    const x = (event.clientX - rect.left) / rect.width;
+    const y = (event.clientY - rect.top) / rect.height;
+
+    const tiltX = (x - 0.5) * 16;
+    const tiltY = (0.5 - y) * 16;
+
+    card.style.setProperty("--tilt-x", `${tiltX}deg`);
+    card.style.setProperty("--tilt-y", `${tiltY}deg`);
+});
+
+document.addEventListener("pointerout", event => {
+    if (event.pointerType === "touch") return;
+
+    const card = event.target.closest(".photocard, .reveal-scene");
+
+    if (!card || card.contains(event.relatedTarget)) return;
+
+    card.style.setProperty("--tilt-x", "0deg");
+    card.style.setProperty("--tilt-y", "0deg");
+});
