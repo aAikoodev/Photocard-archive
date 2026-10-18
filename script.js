@@ -529,7 +529,8 @@ document.addEventListener("click", event => {
     }
 
     if (action === "convert") {
-        convertDuplicate(cardId);
+        const quantity = Number(button.dataset.quantity) || 1;
+        convertDuplicate(cardId, quantity);
     }
 });
 
@@ -1636,46 +1637,70 @@ function renderMissions() {
 }
 /* DUPLICATAS */
 
-function convertDuplicate(cardId) {
+
+function convertDuplicate(cardId, quantity = 1) {
     const card = state.cards.find(item => item.id === cardId);
     if (!card) return;
 
     const copies = getInventoryCount(cardId);
+    const extraCopies = copies - 1;
 
-    if (copies <= 1) {
-        showToast("Você precisa ter pelo menos uma cópia extra.", "error");
+    quantity = Number(quantity);
+
+    if (
+        !Number.isInteger(quantity) ||
+        quantity < 1 ||
+        quantity > extraCopies
+    ) {
+        showToast("Quantidade de cópias inválida.", "error");
         return;
     }
 
-    const points = Math.max(1, Number(state.duplicatePoints) || 10);
+    const pointsPerCopy = Math.max(
+        1,
+        Number(state.duplicatePoints) || 10
+    );
+
+    const totalPoints = pointsPerCopy * quantity;
 
     if (!confirm(
-        `Converter uma cópia extra de "${card.name}" em ${points} pontos?`
+        `Converter ${quantity} cópia(s) extra(s) de "${card.name}"?\n\n` +
+        `Cópias restantes: ${copies - quantity}\n` +
+        `Pontos recebidos: ${totalPoints}`
     )) {
         return;
     }
 
-    state.inventory[cardId] = copies - 1;
-    state.points += points;
+    // Mantém pelo menos uma cópia do card.
+    state.inventory[cardId] = copies - quantity;
+    state.points += totalPoints;
 
     state.tradeHistory.unshift({
         cardName: card.name,
         cardId: card.id,
-        points,
+        quantity: quantity,
+        points: totalPoints,
         date: new Date().toLocaleString("pt-BR")
     });
 
-    addActivity(`Duplicata convertida: ${card.name} (+${points} pontos)`);
+    addActivity(
+        `${quantity} cópia(s) extra(s) convertida(s): ` +
+        `${card.name} (+${totalPoints} pontos)`
+    );
 
     saveState();
     renderAll();
 
-    showToast(`Duplicata convertida! +${points} pontos`, "success");
+    showToast(
+        `${quantity} cópia(s) convertida(s)! +${totalPoints} pontos`,
+        "success"
+    );
 }
+
+
 
 function renderDuplicates() {
     const container = $("#duplicates-list");
-
     const duplicatedCards = state.cards.filter(card => {
         return getInventoryCount(card.id) > 1;
     });
@@ -1685,26 +1710,59 @@ function renderDuplicates() {
 
     if (duplicatedCards.length === 0) {
         container.innerHTML = `
-            <p class="empty-message">Você ainda não possui duplicatas.</p>
+            <p class="empty-message">
+                Você ainda não possui duplicatas.
+            </p>
         `;
     } else {
         container.innerHTML = duplicatedCards.map(card => {
             const copies = getInventoryCount(card.id);
             const extraCopies = copies - 1;
 
+            const buttons = [1, 2, 3, 5, 10]
+                .filter(quantity => quantity <= extraCopies)
+                .map(quantity => {
+                    const points =
+                        quantity *
+                        Math.max(1, Number(state.duplicatePoints) || 10);
+
+                    return `
+                        <button
+                            class="primary-button"
+                            data-action="convert"
+                            data-id="${escapeHTML(card.id)}"
+                            data-quantity="${quantity}"
+                        >
+                            Converter ${quantity}
+                            (+${points} pts)
+                        </button>
+                    `;
+                }).join("");
+
             return `
                 <div class="duplicate-row">
                     <div>
                         <h3>${escapeHTML(card.name)}</h3>
-                        <p>${extraCopies} cópia(s) extra(s) · ${copies} no total</p>
+                        <p>
+                            ${extraCopies} cópia(s) extra(s)
+                            · ${copies} no total
+                        </p>
                     </div>
-                    <button
-                        class="primary-button"
-                        data-action="convert"
-                        data-id="${escapeHTML(card.id)}"
-                    >
-                        Converter 1
-                    </button>
+
+                    <div class="duplicate-conversion-options">
+                        ${buttons}
+
+                        <button
+                            class="primary-button"
+                            data-action="convert"
+                            data-id="${escapeHTML(card.id)}"
+                            data-quantity="${extraCopies}"
+                        >
+                            Converter todas
+                            (+${extraCopies *
+                Math.max(1, Number(state.duplicatePoints) || 10)} pts)
+                        </button>
+                    </div>
                 </div>
             `;
         }).join("");
@@ -1714,20 +1772,29 @@ function renderDuplicates() {
 
     if (state.tradeHistory.length === 0) {
         history.innerHTML = `
-            <p class="empty-message">Nenhuma conversão realizada.</p>
+            <p class="empty-message">
+                Nenhuma conversão realizada.
+            </p>
         `;
     } else {
         history.innerHTML = state.tradeHistory.map(item => `
             <div class="duplicate-row">
                 <div>
                     <h3>${escapeHTML(item.cardName)}</h3>
-                    <p>${escapeHTML(item.date)}</p>
+                    <p>
+                        ${Number(item.quantity) || 1} cópia(s) convertida(s)
+                        · ${escapeHTML(item.date)}
+                    </p>
                 </div>
-                <strong class="mission-reward">+${item.points} pontos</strong>
+
+                <strong class="mission-reward">
+                    +${Number(item.points) || 0} pontos
+                </strong>
             </div>
         `).join("");
     }
 }
+
 
 /* PAINEL PRINCIPAL */
 
