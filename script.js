@@ -698,25 +698,19 @@ async function playSound(soundId, options = {}) {
     return false;
 }
 
-function playRaritySound(card) {
-    const soundId = raritySoundIds[card.rarity] || "sound-common";
-
-    // A reprodução é iniciada sem bloquear a animação.
-    playSound(soundId).catch(error => {
-        console.warn("Erro no som da carta:", error);
-    });
-}
-
 function wait(milliseconds) {
     return new Promise(resolve => {
         setTimeout(resolve, milliseconds);
     });
 }
 
+
 function playRaritySound(card) {
     const soundId = raritySoundIds[card.rarity] || "sound-common";
+
     return playSound(soundId);
 }
+
 
 /* ANIMAÇÃO DE REVELAÇÃO */
 
@@ -1548,9 +1542,11 @@ async function openPack(amount) {
             });
 
             // Toca o som da raridade sem bloquear a revelação.
-            PplayRaritySound(card).catch(error => {
+
+            playRaritySound(card).catch(error => {
                 console.error("Erro no som da carta:", error);
             });
+
 
             /*
              * PONTO PRINCIPAL:
