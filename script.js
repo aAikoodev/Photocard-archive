@@ -2049,8 +2049,9 @@ if ("serviceWorker" in navigator) {
     });
 }
 
+
 /* ========================================
-   MOVIMENTO 3D COM O MOUSE
+   MOVIMENTO 3D GLOBAL — MOUSE E TOQUE
 ======================================== */
 
 let activeTiltCard = null;
@@ -2061,6 +2062,89 @@ function resetCardTilt(card) {
     card.style.setProperty("--tilt-x", "0deg");
     card.style.setProperty("--tilt-y", "0deg");
 }
+
+function getActiveCard() {
+    // Prioriza a carta que está sendo revelada.
+    const revealCard = document.querySelector(
+        ".card-reveal-overlay .reveal-scene"
+    );
+
+    if (revealCard) return revealCard;
+
+    // Se não houver revelação, usa uma carta da coleção.
+    const cards = document.querySelectorAll(
+        "#pack-results .photocard, .card-grid .photocard"
+    );
+
+    return cards.length ? cards[0] : null;
+}
+
+function moveCard3D(clientX, clientY) {
+    const card = getActiveCard();
+
+    if (!card || !card.isConnected) {
+        activeTiltCard = null;
+        return;
+    }
+
+    activeTiltCard = card;
+
+    const rect = card.getBoundingClientRect();
+
+    if (!rect.width || !rect.height) return;
+
+    // A posição global do mouse/dedo controla a inclinação.
+    const x = Math.max(
+        0,
+        Math.min(1, clientX / window.innerWidth)
+    );
+
+    const y = Math.max(
+        0,
+        Math.min(1, clientY / window.innerHeight)
+    );
+
+    const tiltY = (x - 0.5) * 16;
+    const tiltX = (0.5 - y) * 16;
+
+    card.style.setProperty("--tilt-x", `${tiltY}deg`);
+    card.style.setProperty("--tilt-y", `${tiltX}deg`);
+}
+
+// Computador: movimentar o mouse em qualquer lugar da tela.
+document.addEventListener("pointermove", event => {
+    if (event.pointerType === "mouse") {
+        moveCard3D(event.clientX, event.clientY);
+    }
+
+    // Celular: arrastar o dedo pela tela.
+    if (event.pointerType === "touch") {
+        moveCard3D(event.clientX, event.clientY);
+    }
+});
+
+// Ao tocar na tela sem arrastar, também atualiza a inclinação.
+document.addEventListener("pointerdown", event => {
+    if (
+        event.pointerType === "touch" ||
+        event.pointerType === "pen"
+    ) {
+        moveCard3D(event.clientX, event.clientY);
+    }
+});
+
+// Ao soltar o dedo, a carta retorna suavemente à posição neutra.
+document.addEventListener("pointerup", event => {
+    if (event.pointerType === "touch") {
+        resetCardTilt(activeTiltCard);
+    }
+});
+
+window.addEventListener("blur", () => {
+    resetCardTilt(activeTiltCard);
+    activeTiltCard = null;
+});
+
 
 document.addEventListener("pointermove", event => {
     // Não interfere nos toques em celulares.
