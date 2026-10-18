@@ -1008,14 +1008,14 @@ function installPackAnimationStyles() {
 function showPackOpeningAnimation() {
     installPackAnimationStyles();
 
-    
-function installPackAnimationStyles() {
-    if (document.getElementById("pack-animation-styles")) return;
 
-    const style = document.createElement("style");
-    style.id = "pack-animation-styles";
+    function installPackAnimationStyles() {
+        if (document.getElementById("pack-animation-styles")) return;
 
-    style.textContent = `
+        const style = document.createElement("style");
+        style.id = "pack-animation-styles";
+
+        style.textContent = `
         /* Pacote centralizado com fundo escuro */
         #pack-results .pack-opening-stage {
             position: fixed;
@@ -1287,37 +1287,49 @@ function installPackAnimationStyles() {
         }
     `;
 
-    document.head.appendChild(style);
-}
+        document.head.appendChild(style);
+    }
 
-function waitForRevealClick(overlay) {
-    return new Promise(resolve => {
-        let finished = false;
 
-        function finish() {
-            if (finished) return;
-            finished = true;
+    function waitForRevealClick(overlay) {
+        return new Promise(resolve => {
+            let finished = false;
 
-            overlay.removeEventListener("click", finish);
-            overlay.removeEventListener("keydown", onKeyDown);
+            function finish(event) {
+                if (finished) return;
 
-            resolve();
-        }
+                finished = true;
 
-        function onKeyDown(event) {
-            if (event.key === "Enter" || event.key === " ") {
-                event.preventDefault();
-                finish();
+                if (event) {
+                    event.preventDefault();
+                    event.stopPropagation();
+                }
+
+                overlay.removeEventListener("click", finish, true);
+                overlay.removeEventListener("keydown", onKeyDown);
+
+                // Remove a tela de revelação imediatamente.
+                overlay.remove();
+
+                // Libera a próxima carta.
+                resolve();
             }
-        }
 
-        overlay.addEventListener("click", finish);
-        overlay.addEventListener("keydown", onKeyDown);
+            function onKeyDown(event) {
+                if (event.key === "Enter" || event.key === " ") {
+                    finish(event);
+                }
+            }
 
-        overlay.tabIndex = 0;
-        overlay.focus({ preventScroll: true });
-    });
-}
+            // Captura o clique mesmo quando ele acontece dentro da carta.
+            overlay.addEventListener("click", finish, true);
+            overlay.addEventListener("keydown", onKeyDown);
+
+            overlay.tabIndex = 0;
+            overlay.focus({ preventScroll: true });
+        });
+    }
+
 }
 
 /* PROCESSO DE ABERTURA */
