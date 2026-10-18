@@ -704,6 +704,13 @@ function wait(milliseconds) {
     });
 }
 
+const raritySoundIds = {
+    "Comum": "sound-common",
+    "Incomum": "sound-uncommon",
+    "Rara": "sound-rare",
+    "Épica": "sound-epic",
+    "Lendária": "sound-legendary"
+};
 
 function playRaritySound(card) {
     const soundId = raritySoundIds[card.rarity] || "sound-common";
