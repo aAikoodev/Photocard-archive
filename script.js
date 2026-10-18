@@ -1466,47 +1466,49 @@ async function openPack(amount) {
 
             await clickToContinue;
 
-            addActivity(`Pacote aberto: ${results.length} card(s) descoberto(s)`);
+        } // Fim da revelação de cada carta
 
-            saveState();
-            renderAll();
+        addActivity(`Pacote aberto: ${results.length} card(s) descoberto(s)`);
 
-            showToast(`Você descobriu ${results.length} card(s)!`, "success");
+        saveState();
+        renderAll();
 
-        } catch (error) {
-            console.error("Erro durante a abertura do pacote:", error);
+        showToast(`Você descobriu ${results.length} card(s)!`, "success");
 
-            showToast(
-                "Ocorreu um problema durante a abertura do pacote.",
-                "error"
-            );
+    } catch (error) {
+        console.error("Erro durante a abertura do pacote:", error);
 
-        } finally {
-            isOpeningPack = false;
+        showToast(
+            "Ocorreu um problema durante a abertura do pacote.",
+            "error"
+        );
 
-            $$(".pack-button").forEach(button => {
-                const buttonPrice = packPrices[Number(button.dataset.pack)];
+    } finally {
+        isOpeningPack = false;
 
-                button.disabled = state.coins < buttonPrice;
-                button.title = button.disabled
-                    ? "Moedas insuficientes"
-                    : "Abrir pacote";
-            });
-        }
+        $$(".pack-button").forEach(button => {
+            const buttonPrice = packPrices[Number(button.dataset.pack)];
+
+            button.disabled = state.coins < buttonPrice;
+            button.title = button.disabled
+                ? "Moedas insuficientes"
+                : "Abrir pacote";
+        });
     }
+}
 
 
 /* RESUMO DE RARIDADES */
 
 function renderRaritySummary() {
-        const container = $("#rarity-summary");
+    const container = $("#rarity-summary");
 
-        container.innerHTML = rarities.map(rarity => {
-            const count = state.cards.filter(card => {
-                return card.rarity === rarity && getInventoryCount(card.id) > 0;
-            }).length;
+    container.innerHTML = rarities.map(rarity => {
+        const count = state.cards.filter(card => {
+            return card.rarity === rarity && getInventoryCount(card.id) > 0;
+        }).length;
 
-            return `
+        return `
             <div class="rarity-row">
                 <span class="rarity-label">
                     <span class="rarity-dot ${normalizeRarity(rarity)}"></span>
@@ -1515,22 +1517,22 @@ function renderRaritySummary() {
                 <strong>${count}</strong>
             </div>
         `;
-        }).join("");
-    }
+    }).join("");
+}
 
-    /* ATIVIDADE RECENTE */
+/* ATIVIDADE RECENTE */
 
-    function renderActivity() {
-        const container = $("#recent-activity");
+function renderActivity() {
+    const container = $("#recent-activity");
 
-        if (state.activity.length === 0) {
-            container.innerHTML = `
+    if (state.activity.length === 0) {
+        container.innerHTML = `
             <p class="empty-message">Sua atividade aparecerá aqui.</p>
         `;
-            return;
-        }
+        return;
+    }
 
-        container.innerHTML = state.activity.map(item => `
+    container.innerHTML = state.activity.map(item => `
         <div class="duplicate-row">
             <div>
                 <h3>${escapeHTML(item.message)}</h3>
@@ -1539,83 +1541,83 @@ function renderRaritySummary() {
             <span>✦</span>
         </div>
     `).join("");
+}
+
+/* MISSÕES */
+
+const missions = [
+    {
+        id: "first_card",
+        title: "Primeira descoberta",
+        description: "Consiga seu primeiro photocard.",
+        reward: 50,
+        condition: () => getOwnedUniqueCount() >= 1
+    },
+    {
+        id: "five_cards",
+        title: "Colecionador iniciante",
+        description: "Consiga 5 cards diferentes.",
+        reward: 100,
+        condition: () => getOwnedUniqueCount() >= 5
+    },
+    {
+        id: "ten_cards",
+        title: "Arquivo em expansão",
+        description: "Consiga 10 cards diferentes.",
+        reward: 200,
+        condition: () => getOwnedUniqueCount() >= 10
+    },
+    {
+        id: "first_duplicate",
+        title: "Uma cópia extra",
+        description: "Consiga uma duplicata.",
+        reward: 50,
+        condition: () => getDuplicateCount() >= 1
+    },
+    {
+        id: "five_rare",
+        title: "Caçador de raridades",
+        description: "Consiga 5 cards raros, épicos ou lendários diferentes.",
+        reward: 150,
+        condition: () => state.cards.filter(card =>
+            ["Rara", "Épica", "Lendária"].includes(card.rarity) &&
+            getInventoryCount(card.id) > 0
+        ).length >= 5
     }
+];
 
-    /* MISSÕES */
+function checkMissions() {
+    let changed = false;
 
-    const missions = [
-        {
-            id: "first_card",
-            title: "Primeira descoberta",
-            description: "Consiga seu primeiro photocard.",
-            reward: 50,
-            condition: () => getOwnedUniqueCount() >= 1
-        },
-        {
-            id: "five_cards",
-            title: "Colecionador iniciante",
-            description: "Consiga 5 cards diferentes.",
-            reward: 100,
-            condition: () => getOwnedUniqueCount() >= 5
-        },
-        {
-            id: "ten_cards",
-            title: "Arquivo em expansão",
-            description: "Consiga 10 cards diferentes.",
-            reward: 200,
-            condition: () => getOwnedUniqueCount() >= 10
-        },
-        {
-            id: "first_duplicate",
-            title: "Uma cópia extra",
-            description: "Consiga uma duplicata.",
-            reward: 50,
-            condition: () => getDuplicateCount() >= 1
-        },
-        {
-            id: "five_rare",
-            title: "Caçador de raridades",
-            description: "Consiga 5 cards raros, épicos ou lendários diferentes.",
-            reward: 150,
-            condition: () => state.cards.filter(card =>
-                ["Rara", "Épica", "Lendária"].includes(card.rarity) &&
-                getInventoryCount(card.id) > 0
-            ).length >= 5
+    missions.forEach(mission => {
+        const completed = state.completedMissions.includes(mission.id);
+
+        if (!completed && mission.condition()) {
+            state.completedMissions.push(mission.id);
+            state.coins += mission.reward;
+            state.totalCoinsEarned += mission.reward;
+
+            addActivity(`Missão concluída: ${mission.title}`);
+
+            showToast(
+                `Missão concluída! +${mission.reward} moedas`,
+                "success"
+            );
+
+            changed = true;
         }
-    ];
+    });
 
-    function checkMissions() {
-        let changed = false;
+    if (changed) saveState();
+}
 
-        missions.forEach(mission => {
-            const completed = state.completedMissions.includes(mission.id);
+function renderMissions() {
+    const container = $("#missions-list");
 
-            if (!completed && mission.condition()) {
-                state.completedMissions.push(mission.id);
-                state.coins += mission.reward;
-                state.totalCoinsEarned += mission.reward;
+    container.innerHTML = missions.map(mission => {
+        const completed = state.completedMissions.includes(mission.id);
 
-                addActivity(`Missão concluída: ${mission.title}`);
-
-                showToast(
-                    `Missão concluída! +${mission.reward} moedas`,
-                    "success"
-                );
-
-                changed = true;
-            }
-        });
-
-        if (changed) saveState();
-    }
-
-    function renderMissions() {
-        const container = $("#missions-list");
-
-        container.innerHTML = missions.map(mission => {
-            const completed = state.completedMissions.includes(mission.id);
-
-            return `
+        return `
             <article class="mission-card ${completed ? "completed" : ""}">
                 <div>
                     <h3>${escapeHTML(mission.title)}</h3>
@@ -1627,70 +1629,70 @@ function renderRaritySummary() {
                 </div>
             </article>
         `;
-        }).join("");
+    }).join("");
 
-        $("#missions-completed").textContent = state.completedMissions.length;
-        $("#mission-coins-earned").textContent = state.totalCoinsEarned;
-    }
-    /* DUPLICATAS */
+    $("#missions-completed").textContent = state.completedMissions.length;
+    $("#mission-coins-earned").textContent = state.totalCoinsEarned;
+}
+/* DUPLICATAS */
 
-    function convertDuplicate(cardId) {
-        const card = state.cards.find(item => item.id === cardId);
-        if (!card) return;
+function convertDuplicate(cardId) {
+    const card = state.cards.find(item => item.id === cardId);
+    if (!card) return;
 
-        const copies = getInventoryCount(cardId);
+    const copies = getInventoryCount(cardId);
 
-        if (copies <= 1) {
-            showToast("Você precisa ter pelo menos uma cópia extra.", "error");
-            return;
-        }
-
-        const points = Math.max(1, Number(state.duplicatePoints) || 10);
-
-        if (!confirm(
-            `Converter uma cópia extra de "${card.name}" em ${points} pontos?`
-        )) {
-            return;
-        }
-
-        state.inventory[cardId] = copies - 1;
-        state.points += points;
-
-        state.tradeHistory.unshift({
-            cardName: card.name,
-            cardId: card.id,
-            points,
-            date: new Date().toLocaleString("pt-BR")
-        });
-
-        addActivity(`Duplicata convertida: ${card.name} (+${points} pontos)`);
-
-        saveState();
-        renderAll();
-
-        showToast(`Duplicata convertida! +${points} pontos`, "success");
+    if (copies <= 1) {
+        showToast("Você precisa ter pelo menos uma cópia extra.", "error");
+        return;
     }
 
-    function renderDuplicates() {
-        const container = $("#duplicates-list");
+    const points = Math.max(1, Number(state.duplicatePoints) || 10);
 
-        const duplicatedCards = state.cards.filter(card => {
-            return getInventoryCount(card.id) > 1;
-        });
+    if (!confirm(
+        `Converter uma cópia extra de "${card.name}" em ${points} pontos?`
+    )) {
+        return;
+    }
 
-        $("#duplicate-count").textContent = getDuplicateCount();
-        $("#trade-points").textContent = state.points;
+    state.inventory[cardId] = copies - 1;
+    state.points += points;
 
-        if (duplicatedCards.length === 0) {
-            container.innerHTML = `
+    state.tradeHistory.unshift({
+        cardName: card.name,
+        cardId: card.id,
+        points,
+        date: new Date().toLocaleString("pt-BR")
+    });
+
+    addActivity(`Duplicata convertida: ${card.name} (+${points} pontos)`);
+
+    saveState();
+    renderAll();
+
+    showToast(`Duplicata convertida! +${points} pontos`, "success");
+}
+
+function renderDuplicates() {
+    const container = $("#duplicates-list");
+
+    const duplicatedCards = state.cards.filter(card => {
+        return getInventoryCount(card.id) > 1;
+    });
+
+    $("#duplicate-count").textContent = getDuplicateCount();
+    $("#trade-points").textContent = state.points;
+
+    if (duplicatedCards.length === 0) {
+        container.innerHTML = `
             <p class="empty-message">Você ainda não possui duplicatas.</p>
         `;
-        } else {
-            container.innerHTML = duplicatedCards.map(card => {
-                const copies = getInventoryCount(card.id);
-                const extraCopies = copies - 1;
+    } else {
+        container.innerHTML = duplicatedCards.map(card => {
+            const copies = getInventoryCount(card.id);
+            const extraCopies = copies - 1;
 
-                return `
+            return `
                 <div class="duplicate-row">
                     <div>
                         <h3>${escapeHTML(card.name)}</h3>
@@ -1705,17 +1707,17 @@ function renderRaritySummary() {
                     </button>
                 </div>
             `;
-            }).join("");
-        }
+        }).join("");
+    }
 
-        const history = $("#trade-history");
+    const history = $("#trade-history");
 
-        if (state.tradeHistory.length === 0) {
-            history.innerHTML = `
+    if (state.tradeHistory.length === 0) {
+        history.innerHTML = `
             <p class="empty-message">Nenhuma conversão realizada.</p>
         `;
-        } else {
-            history.innerHTML = state.tradeHistory.map(item => `
+    } else {
+        history.innerHTML = state.tradeHistory.map(item => `
             <div class="duplicate-row">
                 <div>
                     <h3>${escapeHTML(item.cardName)}</h3>
@@ -1724,150 +1726,150 @@ function renderRaritySummary() {
                 <strong class="mission-reward">+${item.points} pontos</strong>
             </div>
         `).join("");
-        }
+    }
+}
+
+/* PAINEL PRINCIPAL */
+
+function renderDashboard() {
+    const discovered = state.cards.length;
+    const owned = getOwnedUniqueCount();
+    const percentage = getPercentage();
+
+    $("#stat-discovered").textContent = discovered;
+    $("#stat-owned").textContent = owned;
+    $("#stat-coins").textContent = state.coins;
+    $("#stat-duplicates").textContent = getDuplicateCount();
+
+    $("#collection-percentage").textContent = `${percentage}%`;
+    $("#collection-progress").style.width = `${percentage}%`;
+
+    $("#collection-progress-text").textContent = discovered === 0
+        ? "Cadastre cards para iniciar sua coleção."
+        : `${owned} de ${discovered} cards diferentes coletados.`;
+
+    $("#pack-coins").textContent = state.coins;
+
+    renderRaritySummary();
+    renderActivity();
+}
+
+/* CONFIGURAÇÕES */
+
+function renderSettings() {
+    $("#series-name").value = state.seriesName;
+    $("#initial-coins").value = state.initialCoins ?? 500;
+    $("#duplicate-points").value = state.duplicatePoints;
+}
+
+$("#settings-form").addEventListener("submit", event => {
+    event.preventDefault();
+
+    const seriesName = $("#series-name").value.trim();
+    const initialCoins = Number($("#initial-coins").value);
+    const duplicatePoints = Number($("#duplicate-points").value);
+
+    if (!seriesName) {
+        showToast("Digite o nome da coleção.", "error");
+        return;
     }
 
-    /* PAINEL PRINCIPAL */
-
-    function renderDashboard() {
-        const discovered = state.cards.length;
-        const owned = getOwnedUniqueCount();
-        const percentage = getPercentage();
-
-        $("#stat-discovered").textContent = discovered;
-        $("#stat-owned").textContent = owned;
-        $("#stat-coins").textContent = state.coins;
-        $("#stat-duplicates").textContent = getDuplicateCount();
-
-        $("#collection-percentage").textContent = `${percentage}%`;
-        $("#collection-progress").style.width = `${percentage}%`;
-
-        $("#collection-progress-text").textContent = discovered === 0
-            ? "Cadastre cards para iniciar sua coleção."
-            : `${owned} de ${discovered} cards diferentes coletados.`;
-
-        $("#pack-coins").textContent = state.coins;
-
-        renderRaritySummary();
-        renderActivity();
+    if (!Number.isFinite(initialCoins) || initialCoins < 0) {
+        showToast("Informe uma quantidade válida de moedas iniciais.", "error");
+        return;
     }
 
-    /* CONFIGURAÇÕES */
-
-    function renderSettings() {
-        $("#series-name").value = state.seriesName;
-        $("#initial-coins").value = state.initialCoins ?? 500;
-        $("#duplicate-points").value = state.duplicatePoints;
+    if (!Number.isFinite(duplicatePoints) || duplicatePoints < 1) {
+        showToast("Os pontos por duplicata precisam ser pelo menos 1.", "error");
+        return;
     }
 
-    $("#settings-form").addEventListener("submit", event => {
-        event.preventDefault();
+    state.seriesName = seriesName;
+    state.initialCoins = initialCoins;
+    state.duplicatePoints = duplicatePoints;
 
-        const seriesName = $("#series-name").value.trim();
-        const initialCoins = Number($("#initial-coins").value);
-        const duplicatePoints = Number($("#duplicate-points").value);
+    saveState();
+    renderAll();
 
-        if (!seriesName) {
-            showToast("Digite o nome da coleção.", "error");
-            return;
-        }
+    showToast("Configurações salvas!", "success");
+});
 
-        if (!Number.isFinite(initialCoins) || initialCoins < 0) {
-            showToast("Informe uma quantidade válida de moedas iniciais.", "error");
-            return;
-        }
+/* REINICIAR PROGRESSO */
 
-        if (!Number.isFinite(duplicatePoints) || duplicatePoints < 1) {
-            showToast("Os pontos por duplicata precisam ser pelo menos 1.", "error");
-            return;
-        }
+$("#reset-progress").addEventListener("click", () => {
+    const confirmed = confirm(
+        "Tem certeza? Isso apagará cards cadastrados, coleção, moedas, missões e histórico salvos neste navegador."
+    );
 
-        state.seriesName = seriesName;
-        state.initialCoins = initialCoins;
-        state.duplicatePoints = duplicatePoints;
+    if (!confirmed) return;
 
-        saveState();
-        renderAll();
+    const initialCoins = Number(state.initialCoins ?? 500);
+    const seriesName = state.seriesName;
+    const duplicatePoints = state.duplicatePoints;
 
-        showToast("Configurações salvas!", "success");
+    state = {
+        ...structuredClone(defaultState),
+        coins: initialCoins,
+        seriesName,
+        duplicatePoints,
+        initialCoins
+    };
+
+    saveState();
+    renderAll();
+    showPage("dashboard");
+
+    showToast("Seu progresso foi reiniciado.", "success");
+});
+
+/* ATUALIZAÇÃO GERAL */
+
+function renderAll() {
+    renderFilters();
+    renderCatalog();
+    renderCollection();
+    renderDashboard();
+    renderMissions();
+    renderDuplicates();
+    renderSettings();
+
+    $$(".pack-button").forEach(button => {
+        const amount = Number(button.dataset.pack);
+
+        button.disabled = state.coins < packPrices[amount];
+        button.title = button.disabled
+            ? "Moedas insuficientes"
+            : "Abrir pacote";
     });
+}
 
-    /* REINICIAR PROGRESSO */
+/* INICIALIZAÇÃO */
 
-    $("#reset-progress").addEventListener("click", () => {
-        const confirmed = confirm(
-            "Tem certeza? Isso apagará cards cadastrados, coleção, moedas, missões e histórico salvos neste navegador."
-        );
+function initializeApp() {
+    renderAll();
 
-        if (!confirmed) return;
+    // Verifica missões que já possam estar completas.
+    checkMissions();
 
-        const initialCoins = Number(state.initialCoins ?? 500);
-        const seriesName = state.seriesName;
-        const duplicatePoints = state.duplicatePoints;
+    renderAll();
 
-        state = {
-            ...structuredClone(defaultState),
-            coins: initialCoins,
-            seriesName,
-            duplicatePoints,
-            initialCoins
-        };
+    console.log("Photocard Archive iniciado!");
+}
 
-        saveState();
-        renderAll();
-        showPage("dashboard");
+initializeApp();
 
-        showToast("Seu progresso foi reiniciado.", "success");
+// Ativa o suporte offline do aplicativo
+if ("serviceWorker" in navigator) {
+    window.addEventListener("load", () => {
+        navigator.serviceWorker.register("./service-worker.js")
+            .then(() => {
+                console.log("Suporte offline ativado.");
+            })
+            .catch(error => {
+                console.error(
+                    "Não foi possível ativar o modo offline:",
+                    error
+                );
+            });
     });
-
-    /* ATUALIZAÇÃO GERAL */
-
-    function renderAll() {
-        renderFilters();
-        renderCatalog();
-        renderCollection();
-        renderDashboard();
-        renderMissions();
-        renderDuplicates();
-        renderSettings();
-
-        $$(".pack-button").forEach(button => {
-            const amount = Number(button.dataset.pack);
-
-            button.disabled = state.coins < packPrices[amount];
-            button.title = button.disabled
-                ? "Moedas insuficientes"
-                : "Abrir pacote";
-        });
-    }
-
-    /* INICIALIZAÇÃO */
-
-    function initializeApp() {
-        renderAll();
-
-        // Verifica missões que já possam estar completas.
-        checkMissions();
-
-        renderAll();
-
-        console.log("Photocard Archive iniciado!");
-    }
-
-    initializeApp();
-
-    // Ativa o suporte offline do aplicativo
-    if ("serviceWorker" in navigator) {
-        window.addEventListener("load", () => {
-            navigator.serviceWorker.register("./service-worker.js")
-                .then(() => {
-                    console.log("Suporte offline ativado.");
-                })
-                .catch(error => {
-                    console.error(
-                        "Não foi possível ativar o modo offline:",
-                        error
-                    );
-                });
-        });
-    }
+}
