@@ -1093,23 +1093,13 @@ function showPackOpeningAnimation() {
     const stage = document.createElement("div");
     stage.className = "pack-opening-stage";
 
-    stage.innerHTML = `
-        <div class="pack-3d" aria-hidden="true">
-            <div class="pack-3d-body">
-                <div class="pack-3d-ribbon"></div>
-                <div class="pack-3d-emblem">✦</div>
-            </div>
-            <div class="pack-3d-top"></div>
-        </div>
+   stage.innerHTML = `
+    <button type="button" class="pack-skip-button">
+        Pular animação
+    </button>
 
-        <h2 class="pack-opening-text" id="pack-opening-text">
-            Preparando seu pacote...
-        </h2>
-
-        <p class="pack-opening-subtext">
-            Uma nova descoberta está chegando!
-        </p>
-    `;
+    <div id="current-revealed-card"></div>
+`;
 
     resultsContainer.replaceChildren(stage);
 
@@ -1404,7 +1394,6 @@ async function openPack(amount) {
 
         const skipButton = stage.querySelector(".pack-skip-button");
         const cardContainer = stage.querySelector("#current-revealed-card");
-        const progress = stage.querySelector("#reveal-progress");
 
         // Revela uma carta de cada vez.
         for (let i = 0; i < results.length; i++) {
@@ -1429,11 +1418,6 @@ async function openPack(amount) {
 
             overlay.appendChild(wrapper);
             cardContainer.appendChild(overlay);
-
-            if (progress) {
-                progress.textContent =
-                    `Carta ${i + 1} de ${results.length} — clique na carta para continuar`;
-            }
 
             // Inicia a animação visual.
             requestAnimationFrame(() => {
