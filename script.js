@@ -1116,26 +1116,66 @@ function showPackOpeningAnimation() {
 }
 
 
-/* ESPERA UMA REVELAÇÃO TERMINAR */
+/* ESPERA O CLIQUE PARA REVELAR A PRÓXIMA CARTA */
 
-function waitForRevealClick(overlay) {
-    return new Promise((resolve) => {
-        let clicked = false;
+function waitForRevealClick(overlay, skipButton) {
+    return new Promise(resolve => {
+        let finished = false;
 
-        function handleClick(event) {
-            // Não avançar se o clique for no botão de pular
-            if (event.target.closest(".pack-skip-button")) {
+        function finish(event, skipping = false) {
+            if (finished) return;
+
+            // Não deixa cliques em outros botões avançarem a carta.
+            if (
+                !skipping &&
+                event?.target?.closest("button")
+            ) {
                 return;
             }
 
-            if (clicked) return;
-            clicked = true;
+            finished = true;
 
-            overlay.removeEventListener("click", handleClick);
+            if (event) {
+                event.preventDefault();
+                event.stopPropagation();
+            }
+
+            overlay.removeEventListener("click", onClick, true);
+            overlay.removeEventListener("keydown", onKeyDown);
+            skipButton.removeEventListener("click", onSkip);
+
+            // Se o usuário pediu para pular, ativa essa opção.
+            if (skipping) {
+                skipCardAnimations = true;
+            }
+
+            // A carta só desaparece depois da interação do usuário.
+            overlay.remove();
+
             resolve();
         }
 
-        overlay.addEventListener("click", handleClick);
+        function onClick(event) {
+            finish(event);
+        }
+
+        function onKeyDown(event) {
+            if (event.key === "Enter" || event.key === " ") {
+                finish(event);
+            }
+        }
+
+        function onSkip(event) {
+            finish(event, true);
+        }
+
+        overlay.addEventListener("click", onClick, true);
+        overlay.addEventListener("keydown", onKeyDown);
+
+        skipButton.addEventListener("click", onSkip);
+
+        overlay.tabIndex = 0;
+        overlay.focus({ preventScroll: true });
     });
 }
 
@@ -1348,6 +1388,7 @@ async function openPack(amount) {
         // Estrutura permanente durante todas as revelações.
         const stage = document.createElement("div");
         stage.className = "pack-opening-stage";
+
         stage.innerHTML = `
             <button type="button" class="pack-skip-button">
                 Pular animação
@@ -1360,35 +1401,26 @@ async function openPack(amount) {
 
         resultsContainer.replaceChildren(stage);
 
-        stage.querySelector(".pack-skip-button").addEventListener("click", event => {
-            event.stopPropagation();
-            skipCardAnimations = true;
-        });
-
+        const skipButton = stage.querySelector(".pack-skip-button");
         const cardContainer = stage.querySelector("#current-revealed-card");
         const progress = stage.querySelector("#reveal-progress");
 
+        // Revela uma carta de cada vez.
         for (let i = 0; i < results.length; i++) {
+
+            // Se o usuário pulou, não espera os próximos cliques.
             if (skipCardAnimations) break;
 
             const card = results[i];
 
-            // A carta anterior desaparece antes da próxima entrar.
-            const previousOverlay = cardContainer.querySelector(
-                ".card-reveal-overlay"
-            );
-
-            if (previousOverlay) {
-                previousOverlay.classList.add("reveal-leaving");
-                await wait(350);
-
-                if (skipCardAnimations) break;
-
-                previousOverlay.remove();
-            }
-
             const overlay = document.createElement("div");
             overlay.className = "card-reveal-overlay";
+            overlay.tabIndex = 0;
+            overlay.setAttribute("role", "button");
+            overlay.setAttribute(
+                "aria-label",
+                `Carta ${i + 1} de ${results.length}. Clique para continuar.`
+            );
 
             const wrapper = document.createElement("div");
             wrapper.className = "revealed-card-wrapper";
@@ -1399,30 +1431,30 @@ async function openPack(amount) {
 
             if (progress) {
                 progress.textContent =
-                    `Carta ${i + 1} de ${results.length}`;
+                    `Carta ${i + 1} de ${results.length} — clique na carta para continuar`;
             }
 
+            // Inicia a animação visual.
             requestAnimationFrame(() => {
                 overlay.classList.add("reveal-visible");
             });
 
-            // Toca o som sem bloquear a animação.
+            // Toca o som da raridade sem bloquear a revelação.
             Promise.resolve()
                 .then(() => playRaritySound(card))
-                .catch(error => console.warn("Erro no som:", error));
+                .catch(error => {
+                    console.warn("Erro no som da carta:", error);
+                });
 
-            // Espera o tempo da carta ou até o botão ser usado.
-            const startTime = Date.now();
-
-            while (
-                Date.now() - startTime < 1400 &&
-                !skipCardAnimations
-            ) {
-                await wait(100);
-            }
+            /*
+             * PONTO PRINCIPAL:
+             * O código fica parado aqui até o usuário clicar
+             * na carta ou apertar "Pular animação".
+             */
+            await waitForRevealClick(overlay, skipButton);
         }
 
-        // Apaga a revelação individual e mostra o resumo.
+        // Depois das revelações, mostra o resumo do pacote.
         resultsContainer.replaceChildren();
 
         await showPackSummary(results);
