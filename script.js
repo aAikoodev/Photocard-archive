@@ -2055,37 +2055,117 @@ if ("serviceWorker" in navigator) {
 
 
 /* ========================================
-   MOVIMENTO 3D GLOBAL — COMPUTADOR E MOBILE
+   MOVIMENTO 3D GLOBAL — MOUSE E TOQUE
 ======================================== */
 
 let activeTiltCard = null;
 
-let pointerX = window.innerWidth / 2;
-let pointerY = window.innerHeight / 2;
+function resetCardTilt(card) {
+    if (!card) return;
+
+    card.style.setProperty("--tilt-x", "0deg");
+    card.style.setProperty("--tilt-y", "0deg");
+}
 
 function getActiveCard() {
-    // Prioridade para a carta que está sendo revelada.
-    const revealed = document.querySelector(
+    // Prioriza a carta que está sendo revelada.
+    const revealCard = document.querySelector(
         ".card-reveal-overlay .reveal-scene"
     );
 
-    if (revealed) return revealed;
+    if (revealCard) return revealCard;
 
-    // Durante o resumo, movimenta a primeira carta.
-    const summaryCard = document.querySelector(
-        ".pack-summary-overlay .photocard"
-    );
-
-    if (summaryCard) return summaryCard;
-
-    // Fora da abertura, movimenta a primeira carta visível.
+    // Se não houver revelação, usa uma carta da coleção.
     const cards = document.querySelectorAll(
-        ".page.active .photocard"
+        "#pack-results .photocard, .card-grid .photocard"
     );
 
-    return [...cards].find(card => {
-        return card.getClientRects().length > 0;
-    }) || null;
+    return cards.length ? cards[0] : null;
+}
+
+function moveCard3D(clientX, clientY) {
+    const card = getActiveCard();
+
+    if (!card || !card.isConnected) {
+        activeTiltCard = null;
+        return;
+    }
+
+    activeTiltCard = card;
+
+    const rect = card.getBoundingClientRect();
+
+    if (!rect.width || !rect.height) return;
+
+    // A posição global do mouse/dedo controla a inclinação.
+    const x = Math.max(
+        0,
+        Math.min(1, clientX / window.innerWidth)
+    );
+
+    const y = Math.max(
+        0,
+        Math.min(1, clientY / window.innerHeight)
+    );
+
+    const tiltY = (x - 0.5) * 16;
+    const tiltX = (0.5 - y) * 16;
+
+    card.style.setProperty("--tilt-x", `${tiltY}deg`);
+    card.style.setProperty("--tilt-y", `${tiltX}deg`);
+}
+
+
+
+
+window.addEventListener("blur", () => {
+    resetCardTilt(activeTiltCard);
+    activeTiltCard = null;
+});
+
+
+// Restaura a posição da carta ao sair da janela.
+window.addEventListener("blur", () => {
+    resetCardTilt(activeTiltCard);
+    activeTiltCard = null;
+});
+
+// Restaura a carta quando o ponteiro sai da janela.
+window.addEventListener("blur", () => {
+    resetCardTilt(activeTiltCard);
+    activeTiltCard = null;
+});
+
+document.addEventListener("pointerout", event => {
+    if (event.pointerType === "touch") return;
+
+    const card = event.target.closest(".photocard, .reveal-scene");
+
+    if (!card || card.contains(event.relatedTarget)) return;
+
+    card.style.setProperty("--tilt-x", "0deg");
+    card.style.setProperty("--tilt-y", "0deg");
+});
+
+/* ========================================
+   MOVIMENTO 3D GLOBAL — MOUSE E TOQUE
+======================================== */
+
+
+function getActiveCard() {
+    // Durante a abertura, movimenta a carta que está sendo revelada.
+    const revealedCard = document.querySelector(
+        ".card-reveal-overlay .reveal-scene"
+    );
+
+    if (revealedCard) return revealedCard;
+
+    // Fora da revelação, utiliza uma carta da página ativa.
+    const activePage = document.querySelector(".page.active");
+
+    if (!activePage) return null;
+
+    return activePage.querySelector(".photocard");
 }
 
 function resetCardTilt(card) {
@@ -2096,53 +2176,46 @@ function resetCardTilt(card) {
 }
 
 function moveCard3D(clientX, clientY) {
-    pointerX = clientX;
-    pointerY = clientY;
-
     const card = getActiveCard();
 
-    if (!card) {
-        resetCardTilt(activeTiltCard);
+    if (!card || !card.isConnected) {
         activeTiltCard = null;
         return;
     }
 
-    if (activeTiltCard && activeTiltCard !== card) {
-        resetCardTilt(activeTiltCard);
-    }
-
     activeTiltCard = card;
 
-    const rect = card.getBoundingClientRect();
-
-    if (!rect.width || !rect.height) return;
-
-    // A carta responde à posição do ponteiro na tela inteira.
-    const normalizedX = Math.max(
-        -1,
-        Math.min(1, (clientX / window.innerWidth - 0.5) * 2)
+    // A posição do ponteiro é calculada em relação à tela inteira,
+    // e não apenas em relação à carta.
+    const x = Math.max(
+        0,
+        Math.min(1, clientX / window.innerWidth)
     );
 
-    const normalizedY = Math.max(
-        -1,
-        Math.min(1, (clientY / window.innerHeight - 0.5) * 2)
+    const y = Math.max(
+        0,
+        Math.min(1, clientY / window.innerHeight)
     );
 
-    const tiltY = normalizedX * 10;
-    const tiltX = -normalizedY * 10;
+    const tiltX = (0.5 - y) * 16;
+    const tiltY = (x - 0.5) * 16;
 
-    card.style.setProperty("--tilt-x", `${tiltX}deg`);
-    card.style.setProperty("--tilt-y", `${tiltY}deg`);
+    card.style.setProperty("--tilt-x", `${tiltY}deg`);
+    card.style.setProperty("--tilt-y", `${tiltX}deg`);
 }
 
-// Mouse: funciona mesmo quando o ponteiro está fora da carta.
+// Mouse e movimento do dedo funcionam em qualquer ponto da tela.
 document.addEventListener("pointermove", event => {
-    if (event.pointerType === "mouse") {
+    if (
+        event.pointerType === "mouse" ||
+        event.pointerType === "touch" ||
+        event.pointerType === "pen"
+    ) {
         moveCard3D(event.clientX, event.clientY);
     }
 });
 
-// Mobile: tocar e arrastar controla a inclinação.
+// Um toque sem arrastar também movimenta a carta.
 document.addEventListener("pointerdown", event => {
     if (
         event.pointerType === "touch" ||
@@ -2152,27 +2225,17 @@ document.addEventListener("pointerdown", event => {
     }
 });
 
-document.addEventListener("pointermove", event => {
-    if (
-        event.pointerType === "touch" ||
-        event.pointerType === "pen"
-    ) {
-        moveCard3D(event.clientX, event.clientY);
-    }
-});
-
-// A carta volta suavemente à posição neutra ao soltar o dedo.
+// Ao soltar o dedo, retorna à posição neutra.
 document.addEventListener("pointerup", event => {
-    if (
-        event.pointerType === "touch" ||
-        event.pointerType === "pen"
-    ) {
+    if (event.pointerType === "touch") {
         resetCardTilt(activeTiltCard);
     }
 });
 
-document.addEventListener("pointercancel", () => {
-    resetCardTilt(activeTiltCard);
+document.addEventListener("pointercancel", event => {
+    if (event.pointerType === "touch") {
+        resetCardTilt(activeTiltCard);
+    }
 });
 
 window.addEventListener("blur", () => {
@@ -2180,4 +2243,3 @@ window.addEventListener("blur", () => {
     activeTiltCard = null;
 });
 
-console.log("Movimento 3D global carregado.");
