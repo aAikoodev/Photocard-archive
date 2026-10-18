@@ -730,6 +730,7 @@ $$(".pack-button").forEach(button => {
 
 /* ANIMAÇÃO 3D DO PACOTE — estilos incluídos pelo próprio JavaScript */
 
+
 function installPackAnimationStyles() {
     if (document.getElementById("pack-animation-styles")) return;
 
@@ -737,30 +738,272 @@ function installPackAnimationStyles() {
     style.id = "pack-animation-styles";
 
     style.textContent = `
-        #pack-results .pack-opening-stage{min-height:300px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:22px;padding:24px;text-align:center;perspective:1000px;overflow:hidden}
-        #pack-results .pack-3d{position:relative;width:150px;height:205px;transform-style:preserve-3d;animation:packFloat 1.5s ease-in-out infinite;}
-        #pack-results .pack-3d-body{position:absolute;inset:0;border:2px solid #c8b1ff;border-radius:18px;background:linear-gradient(135deg,#483071,#1b152d 68%,#7452b5);box-shadow:0 18px 45px #0008,inset 0 0 24px #c6a4ff33;transform-style:preserve-3d;overflow:hidden}
-        #pack-results .pack-3d-body:before{content:"";position:absolute;inset:12px;border:1px solid #cbb6ff99;border-radius:11px;background:radial-gradient(circle at 50% 35%,#bda0ff55,transparent 48%)}
-        #pack-results .pack-3d-emblem{position:absolute;inset:0;display:grid;place-items:center;font-size:58px;color:#f3eaff;text-shadow:0 0 22px #c6a4ff;}
-        #pack-results .pack-3d-ribbon{position:absolute;left:calc(50% - 9px);top:0;width:18px;height:100%;background:linear-gradient(90deg,#a78bfa,#f0e7ff,#8b6bd6);opacity:.85;box-shadow:0 0 12px #c7a8ff66}
-        #pack-results .pack-3d-top{position:absolute;z-index:2;left:-5px;right:-5px;top:-14px;height:35px;border:2px solid #d8c7ff;border-radius:10px;background:linear-gradient(135deg,#9270d5,#382452);transform-origin:bottom center;transform:rotateX(0deg);transition:transform .65s cubic-bezier(.2,.8,.2,1)}
-        #pack-results .pack-opening-stage.is-opening .pack-3d{animation:packShake .55s ease-in-out 2}
-        #pack-results .pack-opening-stage.is-opening .pack-3d-top{transform:translateY(-28px) rotateX(115deg)}
-        #pack-results .pack-opening-stage.is-opening .pack-3d-body{animation:packGlow .8s ease-in-out 2 alternate}
-        #pack-results .pack-opening-stage.is-open .pack-3d{animation:packBurst .65s ease-out forwards}
-        #pack-results .pack-opening-stage.is-open .pack-3d-top{transform:translateY(-48px) rotateX(145deg)}
-        #pack-results .pack-opening-stage.is-open .pack-3d-body{box-shadow:0 0 55px #b99affaa,inset 0 0 30px #c6a4ff55}
-        #pack-results .pack-opening-text{margin:0;color:var(--text-primary,#f4efff)}
-        #pack-results .pack-opening-subtext{margin:0;color:var(--text-secondary,#bcb3d0)}
-        @keyframes packFloat{0%,100%{transform:translateY(0) rotateY(-8deg) rotateX(4deg)}50%{transform:translateY(-9px) rotateY(8deg) rotateX(-3deg)}}
-        @keyframes packShake{0%,100%{transform:translateX(0) rotateZ(0)}25%{transform:translateX(-7px) rotateZ(-4deg)}75%{transform:translateX(7px) rotateZ(4deg)}}
-        @keyframes packGlow{from{filter:brightness(1)}to{filter:brightness(1.8)}}
-        @keyframes packBurst{0%{transform:scale(1) rotateY(0)}60%{transform:scale(1.12) rotateY(20deg)}100%{transform:scale(.92) rotateY(0);opacity:.2}}
-        @media(prefers-reduced-motion:reduce){#pack-results .pack-3d,#pack-results .pack-opening-stage.is-opening .pack-3d{animation:none}#pack-results .pack-3d-top{transition:none}}
+        /* Fundo escuro cobrindo a tela inteira */
+        #pack-results .pack-opening-stage {
+            position: fixed;
+            inset: 0;
+            z-index: 99999;
+
+            width: 100%;
+            height: 100%;
+            min-height: 100vh;
+            min-height: 100dvh;
+            box-sizing: border-box;
+
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 22px;
+
+            padding: 24px;
+            text-align: center;
+            perspective: 1000px;
+
+            background: rgba(0, 0, 0, 0.68);
+            backdrop-filter: blur(3px);
+            -webkit-backdrop-filter: blur(3px);
+
+            overflow: hidden;
+        }
+
+        /* Pacote 3D */
+        #pack-results .pack-3d {
+            position: relative;
+            flex-shrink: 0;
+            width: 150px;
+            height: 205px;
+            transform-style: preserve-3d;
+            animation: packFloat 1.5s ease-in-out infinite;
+        }
+
+        /* Corpo do pacote */
+        #pack-results .pack-3d-body {
+            position: absolute;
+            inset: 0;
+
+            border: 2px solid #c8b1ff;
+            border-radius: 18px;
+
+            background: linear-gradient(
+                135deg,
+                #483071,
+                #1b152d 68%,
+                #7452b5
+            );
+
+            box-shadow:
+                0 18px 45px #0008,
+                inset 0 0 24px #c6a4ff33;
+
+            transform-style: preserve-3d;
+            overflow: hidden;
+        }
+
+        /* Detalhes internos do pacote */
+        #pack-results .pack-3d-body:before {
+            content: "";
+            position: absolute;
+            inset: 12px;
+
+            border: 1px solid #cbb6ff99;
+            border-radius: 11px;
+
+            background: radial-gradient(
+                circle at 50% 35%,
+                #bda0ff55,
+                transparent 48%
+            );
+        }
+
+        /* Símbolo central */
+        #pack-results .pack-3d-emblem {
+            position: absolute;
+            inset: 0;
+
+            display: grid;
+            place-items: center;
+
+            font-size: 58px;
+            color: #f3eaff;
+            text-shadow: 0 0 22px #c6a4ff;
+        }
+
+        /* Fita vertical */
+        #pack-results .pack-3d-ribbon {
+            position: absolute;
+            left: calc(50% - 9px);
+            top: 0;
+
+            width: 18px;
+            height: 100%;
+
+            background: linear-gradient(
+                90deg,
+                #a78bfa,
+                #f0e7ff,
+                #8b6bd6
+            );
+
+            opacity: 0.85;
+            box-shadow: 0 0 12px #c7a8ff66;
+        }
+
+        /* Tampa do pacote */
+        #pack-results .pack-3d-top {
+            position: absolute;
+            z-index: 2;
+
+            left: -5px;
+            right: -5px;
+            top: -14px;
+
+            height: 35px;
+
+            border: 2px solid #d8c7ff;
+            border-radius: 10px;
+
+            background: linear-gradient(
+                135deg,
+                #9270d5,
+                #382452
+            );
+
+            transform-origin: bottom center;
+            transform: rotateX(0deg);
+
+            transition:
+                transform 0.65s cubic-bezier(0.2, 0.8, 0.2, 1);
+        }
+
+        /* Movimento ao começar a abrir */
+        #pack-results .pack-opening-stage.is-opening .pack-3d {
+            animation: packShake 0.55s ease-in-out 2;
+        }
+
+        #pack-results .pack-opening-stage.is-opening .pack-3d-top {
+            transform: translateY(-28px) rotateX(115deg);
+        }
+
+        #pack-results .pack-opening-stage.is-opening .pack-3d-body {
+            animation: packGlow 0.8s ease-in-out 2 alternate;
+        }
+
+        /* Efeito final de abertura */
+        #pack-results .pack-opening-stage.is-open .pack-3d {
+            animation: packBurst 0.65s ease-out forwards;
+        }
+
+        #pack-results .pack-opening-stage.is-open .pack-3d-top {
+            transform: translateY(-48px) rotateX(145deg);
+        }
+
+        #pack-results .pack-opening-stage.is-open .pack-3d-body {
+            box-shadow:
+                0 0 55px #b99affaa,
+                inset 0 0 30px #c6a4ff55;
+        }
+
+        /* Texto da animação */
+        #pack-results .pack-opening-text {
+            margin: 0;
+            color: #f4efff;
+            max-width: 100%;
+        }
+
+        #pack-results .pack-opening-subtext {
+            margin: 0;
+            color: #d0c6e5;
+            max-width: 100%;
+        }
+
+        /* Animações */
+        @keyframes packFloat {
+            0%, 100% {
+                transform: translateY(0) rotateY(-8deg) rotateX(4deg);
+            }
+
+            50% {
+                transform: translateY(-9px) rotateY(8deg) rotateX(-3deg);
+            }
+        }
+
+        @keyframes packShake {
+            0%, 100% {
+                transform: translateX(0) rotateZ(0);
+            }
+
+            25% {
+                transform: translateX(-7px) rotateZ(-4deg);
+            }
+
+            75% {
+                transform: translateX(7px) rotateZ(4deg);
+            }
+        }
+
+        @keyframes packGlow {
+            from {
+                filter: brightness(1);
+            }
+
+            to {
+                filter: brightness(1.8);
+            }
+        }
+
+        @keyframes packBurst {
+            0% {
+                transform: scale(1) rotateY(0);
+            }
+
+            60% {
+                transform: scale(1.12) rotateY(20deg);
+            }
+
+            100% {
+                transform: scale(0.92) rotateY(0);
+                opacity: 0.2;
+            }
+        }
+
+        /* Ajustes para telas pequenas */
+        @media (max-width: 480px) {
+            #pack-results .pack-opening-stage {
+                gap: 18px;
+                padding: 16px;
+            }
+
+            #pack-results .pack-3d {
+                width: 130px;
+                height: 180px;
+            }
+
+            #pack-results .pack-opening-text {
+                font-size: 1.1rem;
+            }
+
+            #pack-results .pack-opening-subtext {
+                font-size: 0.9rem;
+            }
+        }
+
+        /* Respeita a preferência por menos animações */
+        @media (prefers-reduced-motion: reduce) {
+            #pack-results .pack-3d,
+            #pack-results .pack-opening-stage.is-opening .pack-3d {
+                animation: none;
+            }
+
+            #pack-results .pack-3d-top {
+                transition: none;
+            }
+        }
     `;
 
     document.head.appendChild(style);
 }
+
 
 function showPackOpeningAnimation() {
     installPackAnimationStyles();
