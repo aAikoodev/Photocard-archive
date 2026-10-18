@@ -729,9 +729,13 @@ $$(".pack-button").forEach(button => {
 });
 
 
+
 /* ========================================
    ANIMAÇÃO 3D DO PACOTE E REVELAÇÃO
 ======================================== */
+
+let skipCardAnimations = false;
+let summaryScreenOpen = false;
 
 function installPackAnimationStyles() {
     if (document.getElementById("pack-animation-styles")) return;
@@ -740,7 +744,6 @@ function installPackAnimationStyles() {
     style.id = "pack-animation-styles";
 
     style.textContent = `
-        /* Tela de abertura do pacote */
         #pack-results .pack-opening-stage {
             position: fixed;
             inset: 0;
@@ -756,7 +759,7 @@ function installPackAnimationStyles() {
             justify-content: center;
             gap: 22px;
             text-align: center;
-            background: rgba(0, 0, 0, 0.88);
+            background: rgba(0, 0, 0, 0.92);
             perspective: 1000px;
         }
 
@@ -764,8 +767,7 @@ function installPackAnimationStyles() {
             box-sizing: border-box;
         }
 
-        /* Pacote 3D */
-        #pack-results .pack-3d {
+        .pack-3d {
             position: relative;
             width: 150px;
             height: 205px;
@@ -781,14 +783,9 @@ function installPackAnimationStyles() {
             border: 2px solid #c8b1ff;
             border-radius: 18px;
             background: linear-gradient(
-                135deg,
-                #483071,
-                #1b152d 68%,
-                #7452b5
+                135deg, #483071, #1b152d 68%, #7452b5
             );
-            box-shadow:
-                0 18px 45px #0008,
-                inset 0 0 24px #c6a4ff33;
+            box-shadow: 0 18px 45px #0008, inset 0 0 24px #c6a4ff33;
         }
 
         .pack-3d-emblem {
@@ -807,12 +804,7 @@ function installPackAnimationStyles() {
             left: calc(50% - 9px);
             width: 18px;
             height: 100%;
-            background: linear-gradient(
-                90deg,
-                #a78bfa,
-                #f0e7ff,
-                #8b6bd6
-            );
+            background: linear-gradient(90deg, #a78bfa, #f0e7ff, #8b6bd6);
             opacity: 0.85;
         }
 
@@ -861,7 +853,22 @@ function installPackAnimationStyles() {
             color: #d0c6e5;
         }
 
-        /* Tela de revelação da carta */
+        .pack-skip-button {
+            padding: 12px 20px;
+            border: 1px solid #c8b1ff;
+            border-radius: 999px;
+            background: #382452;
+            color: white;
+            font-size: 1rem;
+            cursor: pointer;
+        }
+
+        .pack-skip-button:hover {
+            background: #563b7b;
+        }
+
+        /* Tela de revelação individual */
+
         .card-reveal-overlay {
             position: fixed;
             inset: 0;
@@ -874,16 +881,35 @@ function installPackAnimationStyles() {
             box-sizing: border-box;
             padding: 20px;
             overflow-y: auto;
-            background: rgba(0, 0, 0, 0.92);
+            background: rgba(0, 0, 0, 0.94);
             cursor: pointer;
             text-align: center;
-            animation: revealOverlayIn 0.3s ease-out both;
+            opacity: 0;
+            transition: opacity 0.35s ease;
+        }
+
+        .card-reveal-overlay.reveal-visible {
+            opacity: 1;
+        }
+
+        .card-reveal-overlay.reveal-leaving {
+            opacity: 0;
+            pointer-events: none;
         }
 
         .card-reveal-overlay .revealed-card-wrapper {
             width: min(88vw, 360px);
             max-width: 100%;
-            animation: revealCardEnter 0.5s ease-out both;
+            opacity: 0;
+            transform: translateY(16px) scale(0.96);
+            transition:
+                opacity 0.4s ease,
+                transform 0.4s ease;
+        }
+
+        .card-reveal-overlay.reveal-visible .revealed-card-wrapper {
+            opacity: 1;
+            transform: translateY(0) scale(1);
         }
 
         .reveal-click-hint {
@@ -900,25 +926,88 @@ function installPackAnimationStyles() {
             pointer-events: none;
         }
 
+        /* Tela com o resumo de todas as cartas */
+
+        .pack-summary-overlay {
+            position: fixed;
+            inset: 0;
+            z-index: 100001;
+            overflow-y: auto;
+            box-sizing: border-box;
+            padding: 28px 18px;
+            background: rgba(12, 8, 20, 0.98);
+            color: white;
+            text-align: center;
+            cursor: pointer;
+            opacity: 0;
+            transition: opacity 0.4s ease;
+        }
+
+        .pack-summary-overlay.summary-visible {
+            opacity: 1;
+        }
+
+        .pack-summary-title {
+            margin: 12px 0;
+            font-size: clamp(1.5rem, 5vw, 2.2rem);
+        }
+
+        .pack-summary-description {
+            margin: 0 0 24px;
+            color: #d0c6e5;
+        }
+
+        .pack-summary-grid {
+            display: grid;
+            grid-template-columns: repeat(
+                auto-fit, minmax(min(145px, 42vw), 200px)
+            );
+            justify-content: center;
+            gap: 18px;
+            max-width: 1000px;
+            margin: 0 auto;
+        }
+
+        .pack-summary-card {
+            position: relative;
+            min-width: 0;
+            animation: summaryCardEnter 0.45s ease both;
+        }
+
+        .pack-summary-card .photocard {
+            height: 100%;
+        }
+
+        .pack-copy-count {
+            position: absolute;
+            z-index: 5;
+            top: 8px;
+            right: 8px;
+            min-width: 42px;
+            padding: 7px 10px;
+            border: 2px solid #eee0ff;
+            border-radius: 999px;
+            background: #6d42a5;
+            color: white;
+            font-size: 1rem;
+            font-weight: bold;
+            box-shadow: 0 3px 12px #0008;
+        }
+
+        .pack-summary-hint {
+            margin: 28px 0 8px;
+            color: #d0c6e5;
+        }
+
         @keyframes packFloat {
-            0%, 100% {
-                transform: translateY(0) rotateY(-8deg);
-            }
-            50% {
-                transform: translateY(-9px) rotateY(8deg);
-            }
+            0%, 100% { transform: translateY(0) rotateY(-8deg); }
+            50% { transform: translateY(-9px) rotateY(8deg); }
         }
 
         @keyframes packShake {
-            0%, 100% {
-                transform: translateX(0) rotateZ(0);
-            }
-            25% {
-                transform: translateX(-7px) rotateZ(-4deg);
-            }
-            75% {
-                transform: translateX(7px) rotateZ(4deg);
-            }
+            0%, 100% { transform: translateX(0) rotateZ(0); }
+            25% { transform: translateX(-7px) rotateZ(-4deg); }
+            75% { transform: translateX(7px) rotateZ(4deg); }
         }
 
         @keyframes packGlow {
@@ -927,34 +1016,17 @@ function installPackAnimationStyles() {
         }
 
         @keyframes packBurst {
-            0% {
-                transform: scale(1);
-                opacity: 1;
-            }
-            100% {
-                transform: scale(0.7);
-                opacity: 0;
-            }
+            0% { transform: scale(1); opacity: 1; }
+            100% { transform: scale(0.7); opacity: 0; }
         }
 
-        @keyframes revealOverlayIn {
-            from { opacity: 0; }
-            to { opacity: 1; }
-        }
-
-        @keyframes revealCardEnter {
-            from {
-                opacity: 0;
-                transform: translateY(20px) scale(0.9);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0) scale(1);
-            }
+        @keyframes summaryCardEnter {
+            from { opacity: 0; transform: translateY(12px); }
+            to { opacity: 1; transform: translateY(0); }
         }
 
         @media (max-width: 480px) {
-            #pack-results .pack-3d {
+            .pack-3d {
                 width: 130px;
                 height: 180px;
             }
@@ -963,25 +1035,19 @@ function installPackAnimationStyles() {
                 padding: 14px;
                 gap: 14px;
             }
-
-            .reveal-click-hint {
-                font-size: 0.88rem;
-            }
         }
 
         @media (prefers-reduced-motion: reduce) {
-            #pack-results .pack-3d,
-            .reveal-click-hint {
+            .pack-3d,
+            .pack-summary-card {
                 animation: none;
             }
 
-            .pack-3d-top {
-                transition: none;
-            }
-
+            .pack-3d-top,
             .card-reveal-overlay,
-            .revealed-card-wrapper {
-                animation: none;
+            .revealed-card-wrapper,
+            .pack-summary-overlay {
+                transition: none;
             }
         }
     `;
@@ -1028,7 +1094,7 @@ function showPackOpeningAnimation() {
 }
 
 
-/* ESPERA O CLIQUE PARA FECHAR A CARTA */
+/* ESPERA UMA REVELAÇÃO TERMINAR */
 
 function waitForRevealClick(overlay) {
     return new Promise(resolve => {
@@ -1047,11 +1113,13 @@ function waitForRevealClick(overlay) {
             overlay.removeEventListener("click", finish, true);
             overlay.removeEventListener("keydown", onKeyDown);
 
-            // Remove a carta da tela.
-            overlay.remove();
+            overlay.classList.add("reveal-leaving");
 
-            // Permite continuar para a próxima carta.
-            resolve();
+            // Aguarda o desaparecimento suave da carta.
+            wait(350).then(() => {
+                overlay.remove();
+                resolve();
+            });
         }
 
         function onKeyDown(event) {
@@ -1060,11 +1128,113 @@ function waitForRevealClick(overlay) {
             }
         }
 
-        // O clique funciona na carta, na imagem e no fundo.
         overlay.addEventListener("click", finish, true);
         overlay.addEventListener("keydown", onKeyDown);
 
         overlay.tabIndex = 0;
+        overlay.focus({ preventScroll: true });
+    });
+}
+
+
+/* TELA FINAL COM TODAS AS CARTAS DO PACOTE */
+
+function showPackSummary(results) {
+    return new Promise(resolve => {
+        const groupedCards = new Map();
+
+        results.forEach(card => {
+            if (!groupedCards.has(card.id)) {
+                groupedCards.set(card.id, {
+                    card,
+                    quantity: 0
+                });
+            }
+
+            groupedCards.get(card.id).quantity++;
+        });
+
+        const overlay = document.createElement("div");
+        overlay.className = "pack-summary-overlay";
+        overlay.tabIndex = 0;
+        overlay.setAttribute("role", "button");
+        overlay.setAttribute(
+            "aria-label",
+            "Resumo do pacote. Clique para fechar."
+        );
+
+        const cardsHTML = [...groupedCards.values()].map(item => {
+            return `
+                <div class="pack-summary-card">
+                    ${createPhotocardHTML(item.card)}
+                    ${
+                        item.quantity > 1
+                            ? `<span class="pack-copy-count">×${item.quantity}</span>`
+                            : ""
+                    }
+                </div>
+            `;
+        }).join("");
+
+        overlay.innerHTML = `
+            <h2 class="pack-summary-title">
+                ✦ Cartas adquiridas ✦
+            </h2>
+
+            <p class="pack-summary-description">
+                Você recebeu ${results.length} carta(s),
+                incluindo ${groupedCards.size} card(s) diferente(s).
+            </p>
+
+            <div class="pack-summary-grid">
+                ${cardsHTML}
+            </div>
+
+            <p class="pack-summary-hint">
+                Clique em qualquer lugar da tela para continuar.
+            </p>
+        `;
+
+        let finished = false;
+
+        function closeSummary(event) {
+            if (finished) return;
+
+            finished = true;
+
+            if (event) {
+                event.preventDefault();
+                event.stopPropagation();
+            }
+
+            overlay.removeEventListener("click", closeSummary, true);
+            overlay.removeEventListener("keydown", onKeyDown);
+
+            overlay.classList.remove("summary-visible");
+
+            wait(400).then(() => {
+                overlay.remove();
+                summaryScreenOpen = false;
+                resolve();
+            });
+        }
+
+        function onKeyDown(event) {
+            if (event.key === "Enter" || event.key === " ") {
+                closeSummary(event);
+            }
+        }
+
+        overlay.addEventListener("click", closeSummary, true);
+        overlay.addEventListener("keydown", onKeyDown);
+
+        document.body.appendChild(overlay);
+        summaryScreenOpen = true;
+
+        requestAnimationFrame(() => {
+            overlay.classList.add("summary-visible");
+        });
+
         overlay.focus({ preventScroll: true });
     });
 }
@@ -1116,26 +1286,24 @@ async function openPack(amount) {
     }
 
     isOpeningPack = true;
+    skipCardAnimations = false;
+    summaryScreenOpen = false;
 
     $$(".pack-button").forEach(button => {
         button.disabled = true;
     });
 
     try {
-        // Mostra a página dos pacotes e cria a animação.
         showPage("packs");
 
         const openingStage = showPackOpeningAnimation();
 
-        // Tenta tocar o som sem deixar a abertura travada.
-        try {
-            await Promise.race([
-                playSound("sound-open-pack", { showError: true }),
-                wait(2500)
-            ]);
-        } catch (soundError) {
-            console.warn("Erro no som de abertura:", soundError);
-        }
+        // A animação de abertura não fica presa esperando o áudio.
+        Promise.resolve()
+            .then(() => playSound("sound-open-pack", { showError: true }))
+            .catch(error => console.warn("Erro no som:", error));
+
+        await wait(250);
 
         openingStage.classList.add("is-opening");
 
@@ -1156,66 +1324,17 @@ async function openPack(amount) {
 
         await wait(450);
 
-        // Cobra o valor do pacote apenas uma vez.
+        // Cobra o pacote uma única vez.
         state.coins -= price;
-        saveState();
 
-        // Remove a animação do pacote antes de revelar as cartas.
-        resultsContainer.replaceChildren();
-
-        // Revela uma carta por vez.
-        for (let i = 0; i < results.length; i++) {
-            const card = results[i];
-
-            const overlay = document.createElement("div");
-            overlay.className = "card-reveal-overlay";
-            overlay.setAttribute("role", "button");
-            overlay.setAttribute("aria-label",
-                `Carta ${i + 1} de ${results.length}. Clique para continuar.`
-            );
-
-            const wrapper = document.createElement("div");
-            wrapper.className = "revealed-card-wrapper";
-            wrapper.innerHTML = createRevealHTML(card);
-
-            overlay.appendChild(wrapper);
-
-            const hint = document.createElement("p");
-            hint.className = "reveal-click-hint";
-
-            hint.textContent = i < results.length - 1
-                ? `Carta ${i + 1} de ${results.length} — clique para revelar a próxima`
-                : `Carta ${i + 1} de ${results.length} — clique para terminar`;
-
-            overlay.appendChild(hint);
-
-            // Coloca a carta na tela.
-            document.body.appendChild(overlay);
-
-            // Registra o clique imediatamente.
-            const clickToContinue = waitForRevealClick(overlay);
-
-            // Toca o som da raridade sem bloquear os cliques.
-            Promise.resolve()
-                .then(() => playRaritySound(card))
-                .catch(error => {
-                    console.warn("Erro no som da raridade:", error);
-                });
-
-            // Registra a carta na coleção.
-            state.inventory[card.id] =
-                getInventoryCount(card.id) + 1;
+        // Registra todas as cartas recebidas uma única vez.
+        results.forEach(card => {
+            state.inventory[card.id] = getInventoryCount(card.id) + 1;
 
             addActivity(
                 `Card descoberto: ${card.name} (${card.rarity})`
             );
-
-            saveState();
-            renderAll();
-
-            // Aguarda o usuário clicar para avançar.
-            await clickToContinue;
-        }
+        });
 
         addActivity(
             `Pacote aberto: ${results.length} card(s) descoberto(s)`
@@ -1224,20 +1343,99 @@ async function openPack(amount) {
         saveState();
         renderAll();
 
+        // Estrutura permanente durante todas as revelações.
+        const stage = document.createElement("div");
+        stage.className = "pack-opening-stage";
+        stage.innerHTML = `
+            <button type="button" class="pack-skip-button">
+                Pular animação
+            </button>
+
+            <div id="current-revealed-card"></div>
+
+            <p class="pack-opening-subtext" id="reveal-progress"></p>
+        `;
+
+        resultsContainer.replaceChildren(stage);
+
+        stage.querySelector(".pack-skip-button").addEventListener("click", event => {
+            event.stopPropagation();
+            skipCardAnimations = true;
+        });
+
+        const cardContainer = stage.querySelector("#current-revealed-card");
+        const progress = stage.querySelector("#reveal-progress");
+
+        for (let i = 0; i < results.length; i++) {
+            if (skipCardAnimations) break;
+
+            const card = results[i];
+
+            // A carta anterior desaparece antes da próxima entrar.
+            const previousOverlay = cardContainer.querySelector(
+                ".card-reveal-overlay"
+            );
+
+            if (previousOverlay) {
+                previousOverlay.classList.add("reveal-leaving");
+                await wait(350);
+
+                if (skipCardAnimations) break;
+
+                previousOverlay.remove();
+            }
+
+            const overlay = document.createElement("div");
+            overlay.className = "card-reveal-overlay";
+
+            const wrapper = document.createElement("div");
+            wrapper.className = "revealed-card-wrapper";
+            wrapper.innerHTML = createRevealHTML(card);
+
+            overlay.appendChild(wrapper);
+            cardContainer.appendChild(overlay);
+
+            if (progress) {
+                progress.textContent =
+                    `Carta ${i + 1} de ${results.length}`;
+            }
+
+            requestAnimationFrame(() => {
+                overlay.classList.add("reveal-visible");
+            });
+
+            // Toca o som sem bloquear a animação.
+            Promise.resolve()
+                .then(() => playRaritySound(card))
+                .catch(error => console.warn("Erro no som:", error));
+
+            // Espera o tempo da carta ou até o botão ser usado.
+            const startTime = Date.now();
+
+            while (
+                Date.now() - startTime < 1400 &&
+                !skipCardAnimations
+            ) {
+                await wait(100);
+            }
+        }
+
+        // Apaga a revelação individual e mostra o resumo.
+        resultsContainer.replaceChildren();
+
+        await showPackSummary(results);
+
         showToast(
-            `Você descobriu ${results.length} card(s)!`,
+            `Você descobriu ${results.length} carta(s)!`,
             "success"
         );
 
     } catch (error) {
         console.error("Erro durante a abertura do pacote:", error);
 
-        // Evita que uma falha deixe uma tela bloqueada.
-        const stuckOverlay = document.querySelector(
-            ".card-reveal-overlay"
-        );
-
-        if (stuckOverlay) stuckOverlay.remove();
+        document.querySelectorAll(
+            ".card-reveal-overlay, .pack-summary-overlay"
+        ).forEach(element => element.remove());
 
         const stage = document.querySelector(
             "#pack-results .pack-opening-stage"
@@ -1252,13 +1450,13 @@ async function openPack(amount) {
 
     } finally {
         isOpeningPack = false;
+        skipCardAnimations = false;
+        summaryScreenOpen = false;
 
         $$(".pack-button").forEach(button => {
-            const buttonPrice =
-                packPrices[Number(button.dataset.pack)];
+            const buttonPrice = packPrices[Number(button.dataset.pack)];
 
             button.disabled = state.coins < buttonPrice;
-
             button.title = button.disabled
                 ? "Moedas insuficientes"
                 : "Abrir pacote";
