@@ -2000,26 +2000,81 @@ if ("serviceWorker" in navigator) {
 
 /* ========================================
    MOVIMENTO 3D COM O MOUSE
-======================================= */
+======================================== */
+
+let activeTiltCard = null;
+
+function resetCardTilt(card) {
+    if (!card) return;
+
+    card.style.setProperty("--tilt-x", "0deg");
+    card.style.setProperty("--tilt-y", "0deg");
+}
 
 document.addEventListener("pointermove", event => {
-    // O efeito funciona apenas com mouse ou caneta.
+    // Não interfere com os controles de toque do celular.
     if (event.pointerType === "touch") return;
 
-    const card = event.target.closest(".photocard, .reveal-scene");
+    const target = event.target instanceof Element
+        ? event.target
+        : null;
 
-    if (!card) return;
+    const hoveredCard = target?.closest(
+        ".photocard, .reveal-scene"
+    );
+
+    if (hoveredCard) {
+        activeTiltCard = hoveredCard;
+    }
+
+    const card = hoveredCard || activeTiltCard;
+
+    if (!card || !card.isConnected) {
+        activeTiltCard = null;
+        return;
+    }
 
     const rect = card.getBoundingClientRect();
 
-    const x = (event.clientX - rect.left) / rect.width;
-    const y = (event.clientY - rect.top) / rect.height;
+    // Aumenta a área sensível em 35% em todas as direções.
+    const marginX = rect.width * 0.35;
+    const marginY = rect.height * 0.35;
 
-    const tiltX = (x - 0.5) * 16;
-    const tiltY = (0.5 - y) * 16;
+    const outsideArea =
+        event.clientX < rect.left - marginX ||
+        event.clientX > rect.right + marginX ||
+        event.clientY < rect.top - marginY ||
+        event.clientY > rect.bottom + marginY;
+
+    if (outsideArea) {
+        resetCardTilt(card);
+        activeTiltCard = null;
+        return;
+    }
+
+    // Limita as coordenadas para evitar inclinações exageradas.
+    const x = Math.max(
+        0,
+        Math.min(1, (event.clientX - rect.left) / rect.width)
+    );
+
+    const y = Math.max(
+        0,
+        Math.min(1, (event.clientY - rect.top) / rect.height)
+    );
+
+    // Inclinação mais suave.
+    const tiltX = (x - 0.5) * 12;
+    const tiltY = (0.5 - y) * 12;
 
     card.style.setProperty("--tilt-x", `${tiltX}deg`);
     card.style.setProperty("--tilt-y", `${tiltY}deg`);
+});
+
+// Restaura a carta quando o ponteiro sai da janela.
+window.addEventListener("blur", () => {
+    resetCardTilt(activeTiltCard);
+    activeTiltCard = null;
 });
 
 document.addEventListener("pointerout", event => {
