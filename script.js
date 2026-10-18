@@ -579,7 +579,8 @@ function drawCard() {
 
 let isOpeningPack = false;
 
-/* SONS */
+
+/* SONS — CARREGAMENTO E REPRODUÇÃO */
 
 const soundFiles = {
     "sound-open-pack": [
@@ -619,20 +620,17 @@ function findAudioElement(soundId) {
     const existing = document.getElementById(soundId);
 
     if (existing instanceof HTMLAudioElement) {
+        existing.preload = "auto";
         audioElements.set(soundId, existing);
         return existing;
     }
 
-    const paths = soundFiles[soundId];
-
-    if (!paths || paths.length === 0) {
-        console.warn("Som não configurado:", soundId);
+    if (!soundFiles[soundId]) {
+        console.error("ID de som não configurado:", soundId);
         return null;
     }
 
-    const audio = new Audio(paths[0]);
-
-    audio.id = soundId + "-generated";
+    const audio = new Audio();
     audio.preload = "auto";
     audioElements.set(soundId, audio);
 
@@ -641,44 +639,55 @@ function findAudioElement(soundId) {
 
 async function playSound(soundId, options = {}) {
     const audio = findAudioElement(soundId);
+    const paths = soundFiles[soundId] || [];
 
-    if (!audio) return false;
+    if (!audio || paths.length === 0) {
+        console.error("Não há arquivo configurado para:", soundId);
+        return false;
+    }
 
-    // Evita sons de raridade sobrepostos ao som anterior.
+    // Interrompe o som anterior para evitar sobreposição.
     if (currentSoundId && currentSoundId !== soundId) {
         const previousAudio = audioElements.get(currentSoundId);
 
         if (previousAudio) {
             previousAudio.pause();
-            previousAudio.currentTime = 0;
+
+            try {
+                previousAudio.currentTime = 0;
+            } catch (_) {
+                // O áudio pode ainda não ter sido carregado.
+            }
         }
     }
 
     currentSoundId = soundId;
 
-    const paths = soundFiles[soundId] || [];
-    const sources = [
-        audio.currentSrc,
-        audio.src,
-        ...paths
-    ].filter((source, index, all) =>
-        source && all.indexOf(source) === index
-    );
-
-    for (const source of sources) {
+    for (const path of paths) {
         try {
+            // Converte o caminho em URL absoluta para GitHub Pages.
+            const source = new URL(path, document.baseURI).href;
+
             audio.pause();
-            audio.currentTime = 0;
+
+            try {
+                audio.currentTime = 0;
+            } catch (_) {
+                // Continua mesmo se ainda não houver posição de reprodução.
+            }
 
             if (audio.src !== source) {
                 audio.src = source;
+                audio.load();
             }
 
+            // A reprodução é iniciada imediatamente ao chamar a função.
             await audio.play();
+
             return true;
         } catch (error) {
-            console.warn(
-                `Não foi possível reproduzir ${source}:`,
+            console.error(
+                `Falha ao reproduzir "${soundId}" em "${path}":`,
                 error
             );
         }
@@ -690,7 +699,7 @@ async function playSound(soundId, options = {}) {
 
     if (options.showError) {
         showToast(
-            "Não consegui reproduzir o som. Confira os arquivos na pasta sounds.",
+            `Falha ao tocar ${soundId}. Consulte o Console (F12).`,
             "error"
         );
     }
@@ -714,9 +723,9 @@ const raritySoundIds = {
 
 function playRaritySound(card) {
     const soundId = raritySoundIds[card.rarity] || "sound-common";
-
     return playSound(soundId);
 }
+
 
 
 /* ANIMAÇÃO DE REVELAÇÃO */
@@ -2111,165 +2120,19 @@ function moveCard3D(clientX, clientY) {
     card.style.setProperty("--tilt-y", `${tiltX}deg`);
 }
 
-// Computador: movimentar o mouse em qualquer lugar da tela.
-document.addEventListener("pointermove", event => {
-    if (event.pointerType === "mouse") {
-        moveCard3D(event.clientX, event.clientY);
-    }
 
-    // Celular: arrastar o dedo pela tela.
-    if (event.pointerType === "touch") {
-        moveCard3D(event.clientX, event.clientY);
-    }
-});
 
-// Ao tocar na tela sem arrastar, também atualiza a inclinação.
-document.addEventListener("pointerdown", event => {
-    if (
-        event.pointerType === "touch" ||
-        event.pointerType === "pen"
-    ) {
-        moveCard3D(event.clientX, event.clientY);
-    }
-});
-
-// Ao soltar o dedo, a carta retorna suavemente à posição neutra.
-document.addEventListener("pointerup", event => {
-    if (event.pointerType === "touch") {
-        resetCardTilt(activeTiltCard);
-    }
-});
 
 window.addEventListener("blur", () => {
     resetCardTilt(activeTiltCard);
     activeTiltCard = null;
 });
 
-
-document.addEventListener("pointermove", event => {
-    // Não interfere nos toques em celulares.
-    if (event.pointerType === "touch") return;
-
-    const target = event.target instanceof Element
-        ? event.target
-        : null;
-
-    const hoveredCard = target?.closest(
-        ".photocard, .reveal-scene"
-    );
-
-    if (hoveredCard) {
-        activeTiltCard = hoveredCard;
-    }
-
-    const card = hoveredCard || activeTiltCard;
-
-    if (!card || !card.isConnected) {
-        activeTiltCard = null;
-        return;
-    }
-
-    const rect = card.getBoundingClientRect();
-
-    // A área sensível se estende 35% além de cada borda.
-    const marginX = rect.width * 0.35;
-    const marginY = rect.height * 0.35;
-
-    const outsideArea =
-        event.clientX < rect.left - marginX ||
-        event.clientX > rect.right + marginX ||
-        event.clientY < rect.top - marginY ||
-        event.clientY > rect.bottom + marginY;
-
-    if (outsideArea) {
-        resetCardTilt(card);
-        activeTiltCard = null;
-        return;
-    }
-
-    // Coordenadas limitadas à área da carta.
-    const x = Math.max(
-        0,
-        Math.min(1, (event.clientX - rect.left) / rect.width)
-    );
-
-    const y = Math.max(
-        0,
-        Math.min(1, (event.clientY - rect.top) / rect.height)
-    );
-
-    // Inclinação suave, limitada a 6 graus para cada eixo.
-    const tiltX = (x - 0.5) * 12;
-    const tiltY = (0.5 - y) * 12;
-
-    card.style.setProperty("--tilt-x", `${tiltX}deg`);
-    card.style.setProperty("--tilt-y", `${tiltY}deg`);
-});
 
 // Restaura a posição da carta ao sair da janela.
 window.addEventListener("blur", () => {
     resetCardTilt(activeTiltCard);
     activeTiltCard = null;
-});
-
-document.addEventListener("pointermove", event => {
-    // Não interfere com os controles de toque do celular.
-    if (event.pointerType === "touch") return;
-
-    const target = event.target instanceof Element
-        ? event.target
-        : null;
-
-    const hoveredCard = target?.closest(
-        ".photocard, .reveal-scene"
-    );
-
-    if (hoveredCard) {
-        activeTiltCard = hoveredCard;
-    }
-
-    const card = hoveredCard || activeTiltCard;
-
-    if (!card || !card.isConnected) {
-        activeTiltCard = null;
-        return;
-    }
-
-    const rect = card.getBoundingClientRect();
-
-    // Aumenta a área sensível em 35% em todas as direções.
-    const marginX = rect.width * 0.35;
-    const marginY = rect.height * 0.35;
-
-    const outsideArea =
-        event.clientX < rect.left - marginX ||
-        event.clientX > rect.right + marginX ||
-        event.clientY < rect.top - marginY ||
-        event.clientY > rect.bottom + marginY;
-
-    if (outsideArea) {
-        resetCardTilt(card);
-        activeTiltCard = null;
-        return;
-    }
-
-    // Limita as coordenadas para evitar inclinações exageradas.
-    const x = Math.max(
-        0,
-        Math.min(1, (event.clientX - rect.left) / rect.width)
-    );
-
-    const y = Math.max(
-        0,
-        Math.min(1, (event.clientY - rect.top) / rect.height)
-    );
-
-    // Inclinação mais suave.
-    const tiltX = (x - 0.5) * 12;
-    const tiltY = (0.5 - y) * 12;
-
-    card.style.setProperty("--tilt-x", `${tiltX}deg`);
-    card.style.setProperty("--tilt-y", `${tiltY}deg`);
 });
 
 // Restaura a carta quando o ponteiro sai da janela.
@@ -2288,3 +2151,100 @@ document.addEventListener("pointerout", event => {
     card.style.setProperty("--tilt-x", "0deg");
     card.style.setProperty("--tilt-y", "0deg");
 });
+
+/* ========================================
+   MOVIMENTO 3D GLOBAL — MOUSE E TOQUE
+======================================== */
+
+
+function getActiveCard() {
+    // Durante a abertura, movimenta a carta que está sendo revelada.
+    const revealedCard = document.querySelector(
+        ".card-reveal-overlay .reveal-scene"
+    );
+
+    if (revealedCard) return revealedCard;
+
+    // Fora da revelação, utiliza uma carta da página ativa.
+    const activePage = document.querySelector(".page.active");
+
+    if (!activePage) return null;
+
+    return activePage.querySelector(".photocard");
+}
+
+function resetCardTilt(card) {
+    if (!card) return;
+
+    card.style.setProperty("--tilt-x", "0deg");
+    card.style.setProperty("--tilt-y", "0deg");
+}
+
+function moveCard3D(clientX, clientY) {
+    const card = getActiveCard();
+
+    if (!card || !card.isConnected) {
+        activeTiltCard = null;
+        return;
+    }
+
+    activeTiltCard = card;
+
+    // A posição do ponteiro é calculada em relação à tela inteira,
+    // e não apenas em relação à carta.
+    const x = Math.max(
+        0,
+        Math.min(1, clientX / window.innerWidth)
+    );
+
+    const y = Math.max(
+        0,
+        Math.min(1, clientY / window.innerHeight)
+    );
+
+    const tiltX = (0.5 - y) * 16;
+    const tiltY = (x - 0.5) * 16;
+
+    card.style.setProperty("--tilt-x", `${tiltY}deg`);
+    card.style.setProperty("--tilt-y", `${tiltX}deg`);
+}
+
+// Mouse e movimento do dedo funcionam em qualquer ponto da tela.
+document.addEventListener("pointermove", event => {
+    if (
+        event.pointerType === "mouse" ||
+        event.pointerType === "touch" ||
+        event.pointerType === "pen"
+    ) {
+        moveCard3D(event.clientX, event.clientY);
+    }
+});
+
+// Um toque sem arrastar também movimenta a carta.
+document.addEventListener("pointerdown", event => {
+    if (
+        event.pointerType === "touch" ||
+        event.pointerType === "pen"
+    ) {
+        moveCard3D(event.clientX, event.clientY);
+    }
+});
+
+// Ao soltar o dedo, retorna à posição neutra.
+document.addEventListener("pointerup", event => {
+    if (event.pointerType === "touch") {
+        resetCardTilt(activeTiltCard);
+    }
+});
+
+document.addEventListener("pointercancel", event => {
+    if (event.pointerType === "touch") {
+        resetCardTilt(activeTiltCard);
+    }
+});
+
+window.addEventListener("blur", () => {
+    resetCardTilt(activeTiltCard);
+    activeTiltCard = null;
+});
+
