@@ -1548,11 +1548,9 @@ async function openPack(amount) {
             });
 
             // Toca o som da raridade sem bloquear a revelação.
-            Promise.resolve()
-                .then(() => playRaritySound(card))
-                .catch(error => {
-                    console.warn("Erro no som da carta:", error);
-                });
+            PplayRaritySound(card).catch(error => {
+                console.error("Erro no som da carta:", error);
+            });
 
             /*
              * PONTO PRINCIPAL:
