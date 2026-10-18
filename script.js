@@ -582,30 +582,25 @@ let isOpeningPack = false;
 
 /* SONS — CARREGAMENTO E REPRODUÇÃO */
 
+
 const soundFiles = {
     "sound-open-pack": [
-        "./sounds/open-pack.mp3",
-        "./open-pack.mp3"
+        "./sounds/open-pack.mp3"
     ],
     "sound-common": [
-        "./sounds/common.mp3",
-        "./sounds/sound-common.mp3"
+        "./sounds/common.mp3"
     ],
     "sound-uncommon": [
-        "./sounds/uncommon.mp3",
-        "./sounds/sound-uncommon.mp3"
+        "./sounds/uncommon.mp3"
     ],
     "sound-rare": [
-        "./sounds/rare.mp3",
-        "./sounds/sound-rare.mp3"
+        "./sounds/rare.mp3"
     ],
     "sound-epic": [
-        "./sounds/epic.mp3",
-        "./sounds/sound-epic.mp3"
+        "./sounds/epic.mp3"
     ],
     "sound-legendary": [
-        "./sounds/legendary.mp3",
-        "./sounds/sound-legendary.mp3"
+        "./sounds/legendary.mp3"
     ]
 };
 
