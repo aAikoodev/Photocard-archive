@@ -1,8 +1,7 @@
-
 /* ========================================
    PHOTOCARD ARCHIVE
    Funcionalidades principais
-======================================== */
+\======================================== */
 
 /* CONFIGURAÇÕES E DADOS */
 
@@ -49,7 +48,6 @@ let state = loadState();
 /* ACESSO AOS ELEMENTOS */
 
 const $ = (selector) => document.querySelector(selector);
-
 const $$ = (selector) => document.querySelectorAll(selector);
 
 /* SALVAMENTO */
@@ -135,7 +133,6 @@ function getDuplicateCount() {
 
 function getPercentage() {
     if (state.cards.length === 0) return 0;
-
     return Math.round((getOwnedUniqueCount() / state.cards.length) * 100);
 }
 
@@ -150,7 +147,6 @@ function addActivity(message) {
 
 function showToast(message, type = "") {
     const container = $("#toast-container");
-
     if (!container) return;
 
     const toast = document.createElement("div");
@@ -198,8 +194,8 @@ $$("[data-go]").forEach(button => {
 function openCardModal(card = null) {
     $("#card-modal").hidden = false;
     $("#card-form").reset();
-
     $("#card-edit-id").value = card ? card.id : "";
+
     $("#card-form-title").textContent = card
         ? "Editar photocard"
         : "Adicionar photocard";
@@ -237,7 +233,6 @@ $("#card-form").addEventListener("submit", event => {
     event.preventDefault();
 
     const editId = $("#card-edit-id").value;
-
     const name = $("#card-name").value.trim();
     const episode = $("#card-episode").value.trim();
     const character = $("#card-character").value.trim();
@@ -302,7 +297,6 @@ $("#card-form").addEventListener("submit", event => {
 
 function deleteCard(cardId) {
     const card = state.cards.find(item => item.id === cardId);
-
     if (!card) return;
 
     const copies = getInventoryCount(cardId);
@@ -318,8 +312,10 @@ function deleteCard(cardId) {
     delete state.inventory[cardId];
 
     addActivity(`Card excluído: ${card.name}`);
+
     saveState();
     renderAll();
+
     showToast("Card excluído do catálogo.", "success");
 }
 
@@ -371,20 +367,15 @@ function renderFilters() {
         if (rarities.includes(oldValue)) select.value = oldValue;
     });
 }
-
 /* EXIBIÇÃO DOS PHOTOCARDS */
-
 function createPhotocardHTML(card, options = {}) {
     const copies = getInventoryCount(card.id);
     const rarityClass = normalizeRarity(card.rarity);
-
     const imageHTML = card.image
         ? `<img src="${escapeHTML(card.image)}" alt="${escapeHTML(card.name)}" loading="lazy" onerror="this.style.display='none';this.nextElementSibling.style.display='block'">
            <span class="photocard-placeholder" style="display:none">✦</span>`
         : '<span class="photocard-placeholder">✦</span>';
-
     let actions = "";
-
     if (options.catalog) {
         actions = `
             <div class="photocard-actions">
@@ -393,7 +384,6 @@ function createPhotocardHTML(card, options = {}) {
             </div>
         `;
     }
-
     if (options.collection) {
         actions = `
             <div class="photocard-actions">
@@ -401,22 +391,17 @@ function createPhotocardHTML(card, options = {}) {
             </div>
         `;
     }
-
     return `
         <article class="photocard">
             <div class="photocard-image">
                 ${imageHTML}
             </div>
-
             <h3>${escapeHTML(card.name)}</h3>
-
             <p>${escapeHTML(card.character || "Personagem não informado")}</p>
             <p>${escapeHTML(card.episode || "Episódio não informado")}</p>
-
             <span class="rarity-badge ${rarityClass}">
                 ${escapeHTML(card.rarity)}
             </span>
-
             ${options.collection ? `<p style="margin-top:8px">Quantidade: ${copies}</p>` : ""}
             ${actions}
         </article>
@@ -470,7 +455,6 @@ function renderCollection() {
 
     const filtered = state.cards.filter(card => {
         const copies = getInventoryCount(card.id);
-
         if (copies < 1) return false;
 
         const matchesSearch = [
@@ -481,7 +465,6 @@ function renderCollection() {
         ].some(value => String(value || "").toLowerCase().includes(search));
 
         const matchesRarity = rarity === "all" || card.rarity === rarity;
-
         const matchesStatus =
             status === "all" ||
             (status === "owned" && copies === 1) ||
@@ -509,7 +492,6 @@ function renderCollection() {
 $("#catalog-search").addEventListener("input", renderCatalog);
 $("#rarity-filter").addEventListener("change", renderCatalog);
 $("#episode-filter").addEventListener("change", renderCatalog);
-
 $("#collection-search").addEventListener("input", renderCollection);
 $("#collection-rarity-filter").addEventListener("change", renderCollection);
 $("#collection-status-filter").addEventListener("change", renderCollection);
@@ -518,7 +500,6 @@ $("#collection-status-filter").addEventListener("change", renderCollection);
 
 document.addEventListener("click", event => {
     const button = event.target.closest("button[data-action]");
-
     if (!button) return;
 
     const cardId = button.dataset.id;
@@ -562,7 +543,6 @@ function drawRarity() {
 
     for (const rarity of rarities) {
         random -= rarityWeights[rarity];
-
         if (random < 0) return rarity;
     }
 
@@ -592,21 +572,231 @@ function drawCard() {
     ];
 }
 
-/* ABRIR PACOTES */
+/* ========================================
+   ABRIR PACOTES COM SONS E ANIMAÇÕES
+\======================================== */
+
+let isOpeningPack = false;
+
+/* SONS */
+
+const raritySoundIds = {
+    "Comum": "sound-common",
+    "Incomum": "sound-uncommon",
+    "Rara": "sound-rare",
+    "Épica": "sound-epic",
+    "Lendária": "sound-legendary"
+};
+
+function findAudioElement(soundId) {
+    const existing = document.getElementById(soundId);
+    if (existing) return existing;
+
+    const soundFiles = {
+        "sound-open-pack": ["./sounds/open-pack.mp3", "./open-pack.mp3"],
+        "sound-common": ["./sounds/common.mp3", "./sounds/sound-common.mp3"],
+        "sound-uncommon": ["./sounds/uncommon.mp3", "./sounds/sound-uncommon.mp3"],
+        "sound-rare": ["./sounds/rare.mp3", "./sounds/sound-rare.mp3"],
+        "sound-epic": ["./sounds/epic.mp3", "./sounds/sound-epic.mp3"],
+        "sound-legendary": ["./sounds/legendary.mp3", "./sounds/sound-legendary.mp3"]
+    };
+
+    const paths = soundFiles[soundId];
+    if (!paths) return null;
+
+    const audio = new Audio();
+    audio.preload = "auto";
+    audio.dataset.fallbackSources = JSON.stringify(paths);
+    audio.src = paths[0];
+    audio.id = soundId + "-generated";
+
+    document.body.appendChild(audio);
+    return audio;
+}
+
+async function playSound(soundId, options = {}) {
+    const audio = findAudioElement(soundId);
+
+    if (!audio) {
+        console.warn(`Elemento de áudio não encontrado: ${soundId}`);
+        return false;
+    }
+
+    const fallbackSources = audio.dataset.fallbackSources
+        ? JSON.parse(audio.dataset.fallbackSources)
+        : ({
+            "sound-open-pack": ["./sounds/open-pack.mp3", "./open-pack.mp3"],
+            "sound-common": ["./sounds/common.mp3", "./sounds/sound-common.mp3"],
+            "sound-uncommon": ["./sounds/uncommon.mp3", "./sounds/sound-uncommon.mp3"],
+            "sound-rare": ["./sounds/rare.mp3", "./sounds/sound-rare.mp3"],
+            "sound-epic": ["./sounds/epic.mp3", "./sounds/sound-epic.mp3"],
+            "sound-legendary": ["./sounds/legendary.mp3", "./sounds/sound-legendary.mp3"]
+        }[soundId] || []);
+
+    const sources = [audio.currentSrc || audio.src, ...fallbackSources]
+        .filter((source, index, all) => source && all.indexOf(source) === index);
+
+    for (const source of sources) {
+        try {
+            audio.pause();
+            audio.currentTime = 0;
+
+            if (audio.src !== source) audio.src = source;
+
+            await audio.play();
+            return true;
+        } catch (error) {
+            console.warn(`Não foi possível reproduzir ${source}:`, error);
+        }
+    }
+
+    if (options.showError) {
+        showToast(
+            "Não consegui tocar o som de abertura. Confira se sounds/open-pack.mp3 existe no GitHub e se o nome está escrito exatamente assim.",
+            "error"
+        );
+    }
+
+    return false;
+}
+
+function wait(milliseconds) {
+    return new Promise(resolve => {
+        setTimeout(resolve, milliseconds);
+    });
+}
+
+function playRaritySound(card) {
+    const soundId = raritySoundIds[card.rarity] || "sound-common";
+    return playSound(soundId);
+}
+
+/* ANIMAÇÃO DE REVELAÇÃO */
+
+function createRevealHTML(card) {
+    const rarityClass = normalizeRarity(card.rarity);
+
+    const imageHTML = card.image
+        ? `<img
+                src="${escapeHTML(card.image)}"
+                alt="${escapeHTML(card.name)}"
+                onerror="this.style.display='none';this.nextElementSibling.style.display='flex'"
+           >
+           <span class="photocard-placeholder" style="display:none">✦</span>`
+        : `<span class="photocard-placeholder">✦</span>`;
+
+    return `
+        <div class="reveal-scene ${rarityClass}">
+            <div class="reveal-sparkles" aria-hidden="true">
+                <span>✦</span>
+                <span>✧</span>
+                <span>✦</span>
+                <span>✧</span>
+                <span>✦</span>
+                <span>✧</span>
+            </div>
+            <div class="reveal-card">
+                <div class="reveal-card-back">
+                    <span>✦</span>
+                    <p>PHOTOCARD ARCHIVE</p>
+                </div>
+                <div class="reveal-card-front">
+                    <div class="photocard-image">
+                        ${imageHTML}
+                    </div>
+                    <h3>${escapeHTML(card.name)}</h3>
+                    <p>${escapeHTML(card.character || "Personagem não informado")}</p>
+                    <p>${escapeHTML(card.episode || "Episódio não informado")}</p>
+                    <span class="rarity-badge ${rarityClass}">
+                        ${escapeHTML(card.rarity)}
+                    </span>
+                </div>
+            </div>
+            <p class="reveal-caption">
+                ${escapeHTML(card.rarity)}
+            </p>
+        </div>
+    `;
+}
+
+/* BOTÕES DOS PACOTES */
 
 $$(".pack-button").forEach(button => {
-    button.addEventListener("click", () => {
-        openPack(Number(button.dataset.pack));
+    button.addEventListener("click", async () => {
+        if (isOpeningPack) return;
+        await openPack(Number(button.dataset.pack));
     });
 });
 
-function openPack(amount) {
-    const price = packPrices[amount];
+/* ANIMAÇÃO 3D DO PACOTE — estilos incluídos pelo próprio JavaScript */
 
+function installPackAnimationStyles() {
+    if (document.getElementById("pack-animation-styles")) return;
+
+    const style = document.createElement("style");
+    style.id = "pack-animation-styles";
+
+    style.textContent = `
+        #pack-results .pack-opening-stage{min-height:300px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:22px;padding:24px;text-align:center;perspective:1000px;overflow:hidden}
+        #pack-results .pack-3d{position:relative;width:150px;height:205px;transform-style:preserve-3d;animation:packFloat 1.5s ease-in-out infinite;}
+        #pack-results .pack-3d-body{position:absolute;inset:0;border:2px solid #c8b1ff;border-radius:18px;background:linear-gradient(135deg,#483071,#1b152d 68%,#7452b5);box-shadow:0 18px 45px #0008,inset 0 0 24px #c6a4ff33;transform-style:preserve-3d;overflow:hidden}
+        #pack-results .pack-3d-body:before{content:"";position:absolute;inset:12px;border:1px solid #cbb6ff99;border-radius:11px;background:radial-gradient(circle at 50% 35%,#bda0ff55,transparent 48%)}
+        #pack-results .pack-3d-emblem{position:absolute;inset:0;display:grid;place-items:center;font-size:58px;color:#f3eaff;text-shadow:0 0 22px #c6a4ff;}
+        #pack-results .pack-3d-ribbon{position:absolute;left:calc(50% - 9px);top:0;width:18px;height:100%;background:linear-gradient(90deg,#a78bfa,#f0e7ff,#8b6bd6);opacity:.85;box-shadow:0 0 12px #c7a8ff66}
+        #pack-results .pack-3d-top{position:absolute;z-index:2;left:-5px;right:-5px;top:-14px;height:35px;border:2px solid #d8c7ff;border-radius:10px;background:linear-gradient(135deg,#9270d5,#382452);transform-origin:bottom center;transform:rotateX(0deg);transition:transform .65s cubic-bezier(.2,.8,.2,1)}
+        #pack-results .pack-opening-stage.is-opening .pack-3d{animation:packShake .55s ease-in-out 2}
+        #pack-results .pack-opening-stage.is-opening .pack-3d-top{transform:translateY(-28px) rotateX(115deg)}
+        #pack-results .pack-opening-stage.is-opening .pack-3d-body{animation:packGlow .8s ease-in-out 2 alternate}
+        #pack-results .pack-opening-stage.is-open .pack-3d{animation:packBurst .65s ease-out forwards}
+        #pack-results .pack-opening-stage.is-open .pack-3d-top{transform:translateY(-48px) rotateX(145deg)}
+        #pack-results .pack-opening-stage.is-open .pack-3d-body{box-shadow:0 0 55px #b99affaa,inset 0 0 30px #c6a4ff55}
+        #pack-results .pack-opening-text{margin:0;color:var(--text-primary,#f4efff)}
+        #pack-results .pack-opening-subtext{margin:0;color:var(--text-secondary,#bcb3d0)}
+        @keyframes packFloat{0%,100%{transform:translateY(0) rotateY(-8deg) rotateX(4deg)}50%{transform:translateY(-9px) rotateY(8deg) rotateX(-3deg)}}
+        @keyframes packShake{0%,100%{transform:translateX(0) rotateZ(0)}25%{transform:translateX(-7px) rotateZ(-4deg)}75%{transform:translateX(7px) rotateZ(4deg)}}
+        @keyframes packGlow{from{filter:brightness(1)}to{filter:brightness(1.8)}}
+        @keyframes packBurst{0%{transform:scale(1) rotateY(0)}60%{transform:scale(1.12) rotateY(20deg)}100%{transform:scale(.92) rotateY(0);opacity:.2}}
+        @media(prefers-reduced-motion:reduce){#pack-results .pack-3d,#pack-results .pack-opening-stage.is-opening .pack-3d{animation:none}#pack-results .pack-3d-top{transition:none}}
+    `;
+
+    document.head.appendChild(style);
+}
+
+function showPackOpeningAnimation() {
+    installPackAnimationStyles();
+
+    const container = $("#pack-results");
+    if (!container) return null;
+
+    container.innerHTML = `
+        <div class="pack-opening-stage" id="pack-opening-stage" role="status" aria-live="polite">
+            <div class="pack-3d" aria-hidden="true">
+                <div class="pack-3d-top"></div>
+                <div class="pack-3d-body">
+                    <div class="pack-3d-ribbon"></div>
+                    <div class="pack-3d-emblem">✦</div>
+                </div>
+            </div>
+            <h3 class="pack-opening-text" id="pack-opening-text">Preparando sua descoberta...</h3>
+            <p class="pack-opening-subtext">Seu próximo photocard está chegando.</p>
+        </div>
+    `;
+
+    return $("#pack-opening-stage");
+}
+/* PROCESSO DE ABERTURA */
+
+async function openPack(amount) {
+    if (isOpeningPack) return;
+
+    const price = packPrices[amount];
     if (!price) return;
 
     if (state.cards.length === 0) {
-        showToast("Cadastre cards no catálogo antes de abrir pacotes.", "error");
+        showToast(
+            "Cadastre cards no catálogo antes de abrir pacotes.",
+            "error"
+        );
         showPage("catalog");
         return;
     }
@@ -616,37 +806,133 @@ function openPack(amount) {
         return;
     }
 
-    state.coins -= price;
-
+    // Sorteia as cartas antes de cobrar.
     const results = [];
 
     for (let i = 0; i < amount; i++) {
         const card = drawCard();
 
-        if (!card) continue;
-
-        state.inventory[card.id] = getInventoryCount(card.id) + 1;
-        results.push(card);
+        if (card) {
+            results.push(card);
+        }
     }
 
     if (results.length === 0) {
-        state.coins += price;
         showToast("Não foi possível abrir o pacote.", "error");
         return;
     }
 
-    addActivity(`Pacote aberto: ${results.length} card(s) descoberto(s)`);
+    isOpeningPack = true;
 
-    saveState();
-    renderAll();
+    const buttons = $$(".pack-button");
+    buttons.forEach(button => {
+        button.disabled = true;
+    });
 
-    $("#pack-results").innerHTML = results
-        .map(card => createPhotocardHTML(card, { collection: true }))
-        .join("");
+    const resultsContainer = $("#pack-results");
 
-    showToast(`Você descobriu ${results.length} card(s)!`, "success");
+    if (!resultsContainer) {
+        isOpeningPack = false;
+        showToast("Não encontrei a área de abertura (#pack-results) no index.html.", "error");
+        return;
+    }
 
+    const openingStage = showPackOpeningAnimation();
     showPage("packs");
+
+    try {
+        // O áudio é iniciado diretamente após o clique do usuário.
+        await playSound("sound-open-pack", { showError: true });
+
+        // Anima o pacote 3D antes de revelar as cartas.
+        if (openingStage) {
+            openingStage.classList.add("is-opening");
+
+            const openingText = $("#pack-opening-text");
+            if (openingText) {
+                openingText.textContent = "O pacote está se abrindo...";
+            }
+        }
+
+        await wait(1200);
+
+        if (openingStage) {
+            openingStage.classList.remove("is-opening");
+            openingStage.classList.add("is-open");
+
+            const openingText = $("#pack-opening-text");
+            if (openingText) {
+                openingText.textContent = "Sua descoberta está pronta!";
+            }
+        }
+
+        await wait(450);
+
+        // Cobra o pacote uma única vez.
+        state.coins -= price;
+
+        // Limpa o painel antes de começar a sequência.
+        resultsContainer.innerHTML = "";
+
+        for (let i = 0; i < results.length; i++) {
+            const card = results[i];
+
+            const wrapper = document.createElement("div");
+            wrapper.className = "revealed-card-wrapper";
+            wrapper.innerHTML = createRevealHTML(card);
+
+            resultsContainer.appendChild(wrapper);
+
+            // Dispara a animação da carta.
+            wrapper.classList.add("reveal-started");
+
+            // O som da raridade toca quando a carta é revelada.
+            await playRaritySound(card);
+
+            // A carta passa a fazer parte da coleção.
+            state.inventory[card.id] = getInventoryCount(card.id) + 1;
+
+            addActivity(
+                `Card descoberto: ${card.name} (${card.rarity})`
+            );
+
+            saveState();
+            renderAll();
+
+            // Dá tempo para ver a carta antes da próxima revelação.
+            await wait(1500);
+        }
+
+        addActivity(
+            `Pacote aberto: ${results.length} card(s) descoberto(s)`
+        );
+
+        saveState();
+        renderAll();
+
+        showToast(
+            `Você descobriu ${results.length} card(s)!`,
+            "success"
+        );
+    } catch (error) {
+        console.error("Erro durante a abertura do pacote:", error);
+
+        showToast(
+            "Ocorreu um problema durante a abertura do pacote.",
+            "error"
+        );
+    } finally {
+        isOpeningPack = false;
+
+        $$(".pack-button").forEach(button => {
+            const buttonPrice = packPrices[Number(button.dataset.pack)];
+
+            button.disabled = state.coins < buttonPrice;
+            button.title = button.disabled
+                ? "Moedas insuficientes"
+                : "Abrir pacote";
+        });
+    }
 }
 
 /* RESUMO DE RARIDADES */
@@ -749,7 +1035,11 @@ function checkMissions() {
             state.totalCoinsEarned += mission.reward;
 
             addActivity(`Missão concluída: ${mission.title}`);
-            showToast(`Missão concluída! +${mission.reward} moedas`, "success");
+
+            showToast(
+                `Missão concluída! +${mission.reward} moedas`,
+                "success"
+            );
 
             changed = true;
         }
@@ -771,7 +1061,6 @@ function renderMissions() {
                     <p>${escapeHTML(mission.description)}</p>
                     <p>${completed ? "Missão concluída!" : "Continue colecionando para completar."}</p>
                 </div>
-
                 <div class="mission-reward">
                     ${completed ? "✓ Concluída" : `+${mission.reward} moedas`}
                 </div>
@@ -782,12 +1071,10 @@ function renderMissions() {
     $("#missions-completed").textContent = state.completedMissions.length;
     $("#mission-coins-earned").textContent = state.totalCoinsEarned;
 }
-
 /* DUPLICATAS */
 
 function convertDuplicate(cardId) {
     const card = state.cards.find(item => item.id === cardId);
-
     if (!card) return;
 
     const copies = getInventoryCount(cardId);
@@ -848,7 +1135,6 @@ function renderDuplicates() {
                         <h3>${escapeHTML(card.name)}</h3>
                         <p>${extraCopies} cópia(s) extra(s) · ${copies} no total</p>
                     </div>
-
                     <button
                         class="primary-button"
                         data-action="convert"
@@ -986,8 +1272,8 @@ function renderAll() {
 
     $$(".pack-button").forEach(button => {
         const amount = Number(button.dataset.pack);
-        button.disabled = state.coins < packPrices[amount];
 
+        button.disabled = state.coins < packPrices[amount];
         button.title = button.disabled
             ? "Moedas insuficientes"
             : "Abrir pacote";
@@ -1008,6 +1294,7 @@ function initializeApp() {
 }
 
 initializeApp();
+
 // Ativa o suporte offline do aplicativo
 if ("serviceWorker" in navigator) {
     window.addEventListener("load", () => {
