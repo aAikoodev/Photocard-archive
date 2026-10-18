@@ -1119,42 +1119,23 @@ function showPackOpeningAnimation() {
 /* ESPERA UMA REVELAÇÃO TERMINAR */
 
 function waitForRevealClick(overlay) {
-    return new Promise(resolve => {
-        let finished = false;
+    return new Promise((resolve) => {
+        let clicked = false;
 
-        function finish(event) {
-            if (finished) return;
-
-            finished = true;
-
-            if (event) {
-                event.preventDefault();
-                event.stopPropagation();
+        function handleClick(event) {
+            // Não avançar se o clique for no botão de pular
+            if (event.target.closest(".pack-skip-button")) {
+                return;
             }
 
-            overlay.removeEventListener("click", finish, true);
-            overlay.removeEventListener("keydown", onKeyDown);
+            if (clicked) return;
+            clicked = true;
 
-            overlay.classList.add("reveal-leaving");
-
-            // Aguarda o desaparecimento suave da carta.
-            wait(350).then(() => {
-                overlay.remove();
-                resolve();
-            });
+            overlay.removeEventListener("click", handleClick);
+            resolve();
         }
 
-        function onKeyDown(event) {
-            if (event.key === "Enter" || event.key === " ") {
-                finish(event);
-            }
-        }
-
-        overlay.addEventListener("click", finish, true);
-        overlay.addEventListener("keydown", onKeyDown);
-
-        overlay.tabIndex = 0;
-        overlay.focus({ preventScroll: true });
+        overlay.addEventListener("click", handleClick);
     });
 }
 
