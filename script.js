@@ -581,84 +581,130 @@ let isOpeningPack = false;
 
 /* SONS */
 
-const raritySoundIds = {
-    "Comum": "sound-common",
-    "Incomum": "sound-uncommon",
-    "Rara": "sound-rare",
-    "Épica": "sound-epic",
-    "Lendária": "sound-legendary"
+const soundFiles = {
+    "sound-open-pack": [
+        "./sounds/open-pack.mp3",
+        "./open-pack.mp3"
+    ],
+    "sound-common": [
+        "./sounds/common.mp3",
+        "./sounds/sound-common.mp3"
+    ],
+    "sound-uncommon": [
+        "./sounds/uncommon.mp3",
+        "./sounds/sound-uncommon.mp3"
+    ],
+    "sound-rare": [
+        "./sounds/rare.mp3",
+        "./sounds/sound-rare.mp3"
+    ],
+    "sound-epic": [
+        "./sounds/epic.mp3",
+        "./sounds/sound-epic.mp3"
+    ],
+    "sound-legendary": [
+        "./sounds/legendary.mp3",
+        "./sounds/sound-legendary.mp3"
+    ]
 };
 
-function findAudioElement(soundId) {
-    const existing = document.getElementById(soundId);
-    if (existing) return existing;
+const audioElements = new Map();
+let currentSoundId = null;
 
-    const soundFiles = {
-        "sound-open-pack": ["./sounds/open-pack.mp3", "./open-pack.mp3"],
-        "sound-common": ["./sounds/common.mp3", "./sounds/sound-common.mp3"],
-        "sound-uncommon": ["./sounds/uncommon.mp3", "./sounds/sound-uncommon.mp3"],
-        "sound-rare": ["./sounds/rare.mp3", "./sounds/sound-rare.mp3"],
-        "sound-epic": ["./sounds/epic.mp3", "./sounds/sound-epic.mp3"],
-        "sound-legendary": ["./sounds/legendary.mp3", "./sounds/sound-legendary.mp3"]
-    };
+function findAudioElement(soundId) {
+    if (audioElements.has(soundId)) {
+        return audioElements.get(soundId);
+    }
+
+    const existing = document.getElementById(soundId);
+
+    if (existing instanceof HTMLAudioElement) {
+        audioElements.set(soundId, existing);
+        return existing;
+    }
 
     const paths = soundFiles[soundId];
-    if (!paths) return null;
 
-    const audio = new Audio();
-    audio.preload = "auto";
-    audio.dataset.fallbackSources = JSON.stringify(paths);
-    audio.src = paths[0];
+    if (!paths || paths.length === 0) {
+        console.warn("Som não configurado:", soundId);
+        return null;
+    }
+
+    const audio = new Audio(paths[0]);
+
     audio.id = soundId + "-generated";
+    audio.preload = "auto";
+    audioElements.set(soundId, audio);
 
-    document.body.appendChild(audio);
     return audio;
 }
 
 async function playSound(soundId, options = {}) {
     const audio = findAudioElement(soundId);
 
-    if (!audio) {
-        console.warn(`Elemento de áudio não encontrado: ${soundId}`);
-        return false;
+    if (!audio) return false;
+
+    // Evita sons de raridade sobrepostos ao som anterior.
+    if (currentSoundId && currentSoundId !== soundId) {
+        const previousAudio = audioElements.get(currentSoundId);
+
+        if (previousAudio) {
+            previousAudio.pause();
+            previousAudio.currentTime = 0;
+        }
     }
 
-    const fallbackSources = audio.dataset.fallbackSources
-        ? JSON.parse(audio.dataset.fallbackSources)
-        : ({
-            "sound-open-pack": ["./sounds/open-pack.mp3", "./open-pack.mp3"],
-            "sound-common": ["./sounds/common.mp3", "./sounds/sound-common.mp3"],
-            "sound-uncommon": ["./sounds/uncommon.mp3", "./sounds/sound-uncommon.mp3"],
-            "sound-rare": ["./sounds/rare.mp3", "./sounds/sound-rare.mp3"],
-            "sound-epic": ["./sounds/epic.mp3", "./sounds/sound-epic.mp3"],
-            "sound-legendary": ["./sounds/legendary.mp3", "./sounds/sound-legendary.mp3"]
-        }[soundId] || []);
+    currentSoundId = soundId;
 
-    const sources = [audio.currentSrc || audio.src, ...fallbackSources]
-        .filter((source, index, all) => source && all.indexOf(source) === index);
+    const paths = soundFiles[soundId] || [];
+    const sources = [
+        audio.currentSrc,
+        audio.src,
+        ...paths
+    ].filter((source, index, all) =>
+        source && all.indexOf(source) === index
+    );
 
     for (const source of sources) {
         try {
             audio.pause();
             audio.currentTime = 0;
 
-            if (audio.src !== source) audio.src = source;
+            if (audio.src !== source) {
+                audio.src = source;
+            }
 
             await audio.play();
             return true;
         } catch (error) {
-            console.warn(`Não foi possível reproduzir ${source}:`, error);
+            console.warn(
+                `Não foi possível reproduzir ${source}:`,
+                error
+            );
         }
+    }
+
+    if (currentSoundId === soundId) {
+        currentSoundId = null;
     }
 
     if (options.showError) {
         showToast(
-            "Não consegui tocar o som de abertura. Confira se sounds/open-pack.mp3 existe no GitHub e se o nome está escrito exatamente assim.",
+            "Não consegui reproduzir o som. Confira os arquivos na pasta sounds.",
             "error"
         );
     }
 
     return false;
+}
+
+function playRaritySound(card) {
+    const soundId = raritySoundIds[card.rarity] || "sound-common";
+
+    // A reprodução é iniciada sem bloquear a animação.
+    playSound(soundId).catch(error => {
+        console.warn("Erro no som da carta:", error);
+    });
 }
 
 function wait(milliseconds) {
@@ -1405,11 +1451,15 @@ async function openPack(amount) {
         const openingStage = showPackOpeningAnimation();
 
         // A animação de abertura não fica presa esperando o áudio.
-        Promise.resolve()
-            .then(() => playSound("sound-open-pack", { showError: true }))
-            .catch(error => console.warn("Erro no som:", error));
+        // Inicia o som diretamente durante a interação do usuário.
+        // A animação continua sem aguardar a reprodução.
+        const openingSoundPromise = playSound("sound-open-pack", {
+            showError: true
+        });
 
-        await wait(250);
+        openingSoundPromise.catch(error => {
+            console.warn("Erro no som de abertura:", error);
+        });
 
         openingStage.classList.add("is-opening");
 
@@ -2010,6 +2060,72 @@ function resetCardTilt(card) {
     card.style.setProperty("--tilt-x", "0deg");
     card.style.setProperty("--tilt-y", "0deg");
 }
+
+document.addEventListener("pointermove", event => {
+    // Não interfere nos toques em celulares.
+    if (event.pointerType === "touch") return;
+
+    const target = event.target instanceof Element
+        ? event.target
+        : null;
+
+    const hoveredCard = target?.closest(
+        ".photocard, .reveal-scene"
+    );
+
+    if (hoveredCard) {
+        activeTiltCard = hoveredCard;
+    }
+
+    const card = hoveredCard || activeTiltCard;
+
+    if (!card || !card.isConnected) {
+        activeTiltCard = null;
+        return;
+    }
+
+    const rect = card.getBoundingClientRect();
+
+    // A área sensível se estende 35% além de cada borda.
+    const marginX = rect.width * 0.35;
+    const marginY = rect.height * 0.35;
+
+    const outsideArea =
+        event.clientX < rect.left - marginX ||
+        event.clientX > rect.right + marginX ||
+        event.clientY < rect.top - marginY ||
+        event.clientY > rect.bottom + marginY;
+
+    if (outsideArea) {
+        resetCardTilt(card);
+        activeTiltCard = null;
+        return;
+    }
+
+    // Coordenadas limitadas à área da carta.
+    const x = Math.max(
+        0,
+        Math.min(1, (event.clientX - rect.left) / rect.width)
+    );
+
+    const y = Math.max(
+        0,
+        Math.min(1, (event.clientY - rect.top) / rect.height)
+    );
+
+    // Inclinação suave, limitada a 6 graus para cada eixo.
+    const tiltX = (x - 0.5) * 12;
+    const tiltY = (0.5 - y) * 12;
+
+    card.style.setProperty("--tilt-x", `${tiltX}deg`);
+    card.style.setProperty("--tilt-y", `${tiltY}deg`);
+});
+
+// Restaura a posição da carta ao sair da janela.
+window.addEventListener("blur", () => {
+    resetCardTilt(activeTiltCard);
+    activeTiltCard = null;
+});
 
 document.addEventListener("pointermove", event => {
     // Não interfere com os controles de toque do celular.
