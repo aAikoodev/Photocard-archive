@@ -2243,3 +2243,32 @@ window.addEventListener("blur", () => {
     activeTiltCard = null;
 });
 
+
+async function testarSomIncomum() {
+    const audio = new Audio(
+        "https://aaikoodev.github.io/Photocard-archive/sounds/uncommon.mp3"
+    );
+
+    audio.addEventListener("canplay", () => {
+        console.log("Áudio carregado e pronto para tocar.");
+    });
+
+    audio.addEventListener("error", () => {
+        console.error("Erro ao carregar o áudio:", audio.error);
+        console.error(
+            "Código do erro:",
+            audio.error ? audio.error.code : "desconhecido"
+        );
+    });
+
+    try {
+        await audio.play();
+        console.log("Som reproduzido com sucesso.");
+    } catch (erro) {
+        console.error("Falha no teste de áudio:", erro);
+    }
+}
+
+document.addEventListener("click", testarSomIncomum, {
+    once: true
+});
